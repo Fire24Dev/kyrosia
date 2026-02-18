@@ -79,23 +79,24 @@
 <header>
     <div class="brand">
         <h1>KYROS IA</h1>
-        <div class="status" id="system-status">SISTEMA ONLINE</div>
+        <div class="status" id="system-status">SISTEMA OFFLINE</div>
     </div>
-    <button class="new-chat-btn" onclick="logout()">LOGOUT</button>
+    <button class="new-chat-btn" onclick="newChat()">NUOVA CHAT</button>
 </header>
 
 <div id="chat-window">
-    <div class="msg ai">Sistemi inizializzati. Identificati per continuare.</div>
+    <div class="msg ai" id="welcome-msg">Inizializzazione sistemi in corso...</div>
 </div>
 
 <div class="input-wrapper">
     <div class="input-container">
-        <input type="text" id="userInput" placeholder="Digita il tuo nome utente..." autocomplete="off">
+        <input type="text" id="userInput" placeholder="Invia un messaggio..." autocomplete="off">
         <button class="icon-btn" id="sendBtn">🚀</button>
     </div>
 </div>
 
 <script>
+    // --- CHIAVE API ---
     const _0xkey = [103,115,107,95,52,114,52,97,112,122,67,70,98,116,106,105,86,74,54,110,77,56,101,48,87,71,100,121,98,51,70,89,87,79,109,101,90,67,90,103,67,80,90,74,69,121,57,52,78,68,80,74,104,108,79,100];
     const _vault = () => _0xkey.map(c => String.fromCharCode(c)).join('');
 
@@ -103,91 +104,83 @@
     const btn = document.getElementById('sendBtn');
     const windowChat = document.getElementById('chat-window');
     const statusLabel = document.getElementById('system-status');
+    const welcome = document.getElementById('welcome-msg');
 
-    // Recupero Dati
-    let currentUsername = sessionStorage.getItem('kyros_user');
+    // --- LOGICA IDENTITÀ (Prende il nome dal login di index.html) ---
+    // Assicurati che nel tuo index.html, al login, tu faccia: localStorage.setItem('username', nomeUtente);
+    let currentNickname = localStorage.getItem('username') || "Ospite";
+    
     let isMaintenance = localStorage.getItem('kyros_maintenance') === 'true';
     let blacklist = JSON.parse(localStorage.getItem('kyros_blacklist')) || [];
     let mutes = JSON.parse(localStorage.getItem('kyros_mutes')) || {};
 
-    function initInterface() {
-        if (!currentUsername) {
-            statusLabel.innerText = "LOGIN RICHIESTO";
-            input.placeholder = "Inserisci il tuo nome utente...";
-            return;
-        }
-        
-        if (currentUsername === "firethesuper") {
-            statusLabel.innerText = "OWNER MODE";
+    function updateUI() {
+        if (currentNickname === "firethesuper") {
+            statusLabel.innerText = "OWNER: firethesuper";
             statusLabel.style.color = "var(--owner-color)";
+            welcome.innerHTML = "Bentornato, <b>Owner</b>. Protocolli di comando pronti.";
         } else if (isMaintenance) {
             statusLabel.innerText = "MANUTENZIONE";
             statusLabel.style.color = "var(--danger)";
+            welcome.innerHTML = "Il sistema è attualmente in manutenzione.";
         } else {
-            statusLabel.innerText = "UTENTE: " + currentUsername;
+            statusLabel.innerText = "UTENTE: " + currentNickname;
             statusLabel.style.color = "var(--accent)";
+            welcome.innerHTML = `Ciao <b>${currentNickname}</b>! Sono KyrosIA. In cosa posso aiutarti?`;
         }
-        input.placeholder = "Messaggio o comando...";
     }
 
-    function checkMute(user) {
-        if (mutes[user]) {
+    function checkMute(nick) {
+        if (mutes[nick]) {
             const now = Date.now();
-            if (now < mutes[user]) return Math.ceil((mutes[user] - now) / 60000);
-            else { delete mutes[user]; localStorage.setItem('kyros_mutes', JSON.stringify(mutes)); }
+            if (now < mutes[nick]) return Math.ceil((mutes[nick] - now) / 60000);
+            delete mutes[nick];
+            localStorage.setItem('kyros_mutes', JSON.stringify(mutes));
         }
         return 0;
     }
 
-    async function handleAction() {
-        const text = input.value.trim();
-        if (!text) return;
+    async function execute() {
+        const val = input.value.trim();
+        if (!val) return;
 
-        // Gestione Login
-        if (!currentUsername) {
-            currentUsername = text;
-            sessionStorage.setItem('kyros_user', text);
-            windowChat.innerHTML += `<div class="msg ai">Benvenuto <b>${text}</b>. Nucleo Kyros pronto.</div>`;
-            input.value = '';
-            initInterface();
-            return;
-        }
+        const isOwner = (currentNickname === "firethesuper");
 
-        // Verifica Ban
-        if (blacklist.includes(currentUsername) && currentUsername !== "firethesuper") {
-            addAiMessage("ERRORE: Accesso negato. Questa unità è stata terminata.");
+        // Sicurezza: Ban
+        if (blacklist.includes(currentNickname) && !isOwner) {
+            addAiMsg("Accesso negato. Sei stato bannato dai sistemi Kyros.");
             input.value = '';
             return;
         }
 
-        // Verifica Mute
-        const muteTime = checkMute(currentUsername);
-        if (muteTime > 0 && currentUsername !== "firethesuper") {
-            addAiMessage(`Sei silenziato per altri ${muteTime} minuti.`);
+        // Sicurezza: Mute
+        const mTime = checkMute(currentNickname);
+        if (mTime > 0 && !isOwner) {
+            addAiMsg(`Sei silenziato. Potrai parlare tra ${mTime} minuti.`);
             input.value = '';
             return;
         }
 
-        const isOwner = currentUsername === "firethesuper";
-        windowChat.innerHTML += `<div class="msg user ${isOwner ? 'owner-msg' : ''}">${text}</div>`;
+        // Messaggio Utente
+        windowChat.innerHTML += `<div class="msg user ${isOwner ? 'owner-msg' : ''}">${val}</div>`;
         input.value = '';
         windowChat.scrollTop = windowChat.scrollHeight;
 
-        // Gestione Comandi
-        if (text.startsWith("/")) {
-            if (isOwner) handleCommands(text);
-            else addAiMessage("Solo l'Owner può eseguire protocolli.");
+        // Comandi Owner
+        if (val.startsWith("/")) {
+            if (isOwner) handleCmd(val);
+            else addAiMsg("Comando non riconosciuto o permessi insufficienti.");
             return;
         }
 
-        // Manutenzione
+        // Blocco Manutenzione
         if (isMaintenance && !isOwner) {
-            addAiMessage("Sistema in manutenzione forzata.");
+            addAiMsg("Sistemi offline per manutenzione. Solo l'Owner può comunicare.");
             return;
         }
 
-        // Risposta AI
-        const loadId = "id-" + Date.now();
+        // Chiamata AI
+        const loadId = "ai-" + Date.now();
         windowChat.innerHTML += `<div class="msg ai" id="${loadId}">...</div>`;
         
         try {
@@ -196,65 +189,76 @@
                 headers: { "Authorization": `Bearer ${_vault()}`, "Content-Type": "application/json" },
                 body: JSON.stringify({
                     model: "llama-3.3-70b-versatile",
-                    messages: [{ role: "system", content: "Sei KyrosIA, creato da firethesuper." }, { role: "user", content: text }]
+                    messages: [
+                        { role: "system", content: "Sei KyrosIA, creato da firethesuper. Rispondi in modo brillante in italiano." },
+                        { role: "user", content: val }
+                    ]
                 })
             });
             const data = await response.json();
             document.getElementById(loadId).innerHTML = data.choices[0].message.content;
-        } catch (e) { document.getElementById(loadId).innerText = "Errore API."; }
+        } catch (e) { document.getElementById(loadId).innerText = "Errore di connessione al nucleo."; }
         windowChat.scrollTop = windowChat.scrollHeight;
     }
 
-    function handleCommands(text) {
-        const p = text.split(" ");
-        const cmd = p[0].toLowerCase();
-        const target = p[1];
-        const val = parseInt(p[2]);
+    function handleCmd(text) {
+        const args = text.split(" ");
+        const cmd = args[0].toLowerCase();
+        const target = args[1];
+        const time = parseInt(args[2]);
 
         switch(cmd) {
+            case "/help":
+                addAiMsg("<b>Comandi disponibili:</b> /ban [nome], /unban [nome], /mute [nome] [min], /unmute [nome], /manutenzione, /accountlist");
+                break;
             case "/ban":
-                if (!target) return addAiMessage("Uso: /ban nome");
-                blacklist.push(target);
+                if (!target) return addAiMsg("Uso: /ban [nome]");
+                if (!blacklist.includes(target)) blacklist.push(target);
                 localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
-                addAiMessage(`Unità ${target} bandita.`);
+                addAiMsg(`Utente ${target} bannato con successo.`);
                 break;
             case "/unban":
                 blacklist = blacklist.filter(u => u !== target);
                 localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
-                addAiMessage(`Unità ${target} ripristinata.`);
+                addAiMsg(`Utente ${target} riabilitato.`);
                 break;
             case "/mute":
-                if (!target || !val) return addAiMessage("Uso: /mute nome minuti");
-                mutes[target] = Date.now() + (val * 60000);
+                if (!target || !time) return addAiMsg("Uso: /mute [nome] [minuti]");
+                mutes[target] = Date.now() + (time * 60000);
                 localStorage.setItem('kyros_mutes', JSON.stringify(mutes));
-                addAiMessage(`${target} mutato.`);
+                addAiMsg(`${target} silenziato per ${time} minuti.`);
                 break;
             case "/unmute":
                 delete mutes[target];
                 localStorage.setItem('kyros_mutes', JSON.stringify(mutes));
-                addAiMessage(`${target} smutato.`);
-                break;
-            case "/help":
-                addAiMessage("<b>Comandi:</b> /ban, /unban, /mute, /unmute, /manutenzione, /accountlist");
+                addAiMsg(`${target} può tornare a parlare.`);
                 break;
             case "/manutenzione":
                 isMaintenance = !isMaintenance;
                 localStorage.setItem('kyros_maintenance', isMaintenance);
-                initInterface();
-                addAiMessage("Manutenzione: " + isMaintenance);
+                updateUI();
+                addAiMsg("Modalità manutenzione: " + (isMaintenance ? "ATTIVA" : "DISATTIVA"));
                 break;
             case "/accountlist":
-                addAiMessage(`BANNATI: ${blacklist.join(", ") || "Nessuno"} | MUTATI: ${Object.keys(mutes).join(", ")}`);
+                addAiMsg(`<b>BANNATI:</b> ${blacklist.join(", ") || "Nessuno"}<br><b>MUTATI:</b> ${Object.keys(mutes).join(", ") || "Nessuno"}`);
                 break;
         }
     }
 
-    function addAiMessage(t) { windowChat.innerHTML += `<div class="msg ai">${t}</div>`; windowChat.scrollTop = windowChat.scrollHeight; }
-    function logout() { sessionStorage.clear(); location.reload(); }
+    function addAiMsg(t) { 
+        windowChat.innerHTML += `<div class="msg ai">${t}</div>`; 
+        windowChat.scrollTop = windowChat.scrollHeight; 
+    }
+    
+    function newChat() {
+        windowChat.innerHTML = "";
+        updateUI();
+    }
 
-    initInterface();
-    btn.onclick = handleAction;
-    input.onkeypress = (e) => { if (e.key === 'Enter') handleAction(); };
+    // Inizializzazione automatica al caricamento
+    updateUI();
+    btn.onclick = execute;
+    input.onkeypress = (e) => { if (e.key === 'Enter') execute(); };
 </script>
 </body>
 </html>
