@@ -14,17 +14,16 @@
             --owner-color: #ff0077;
             --glass-border: rgba(255, 255, 255, 0.08);
             --danger: #ff4b4b;
+            --success: #00ff88;
         }
 
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); margin: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
-        header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(5, 8, 16, 0.8); border-bottom: 1px solid var(--glass-border); z-index: 10; }
-        .status { font-size: 0.7rem; font-weight: 800; color: var(--accent); letter-spacing: 1px; }
+        header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(5, 8, 16, 0.8); border-bottom: 1px solid var(--glass-border); z-index: 10; gap: 10px; }
+        .status { font-size: 0.7rem; font-weight: 800; color: var(--accent); letter-spacing: 1px; flex: 1; }
 
         #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
         .msg { max-width: 85%; padding: 12px 16px; border-radius: 20px; font-size: 0.95rem; line-height: 1.4; animation: emerge 0.3s ease; word-wrap: break-word; }
-        
-        /* Formattazione grassetto nei messaggi */
         .msg b { font-weight: 800; }
 
         .user { align-self: flex-end; background: linear-gradient(135deg, #00d2ff, #3a86ff); color: white; border-bottom-right-radius: 4px; }
@@ -33,7 +32,18 @@
 
         .input-area { padding: 20px; background: var(--bg); display: flex; gap: 10px; border-top: 1px solid var(--glass-border); }
         input { flex: 1; padding: 15px; border-radius: 15px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; outline: none; font-size: 1rem; }
-        button { width: 55px; border-radius: 15px; border: none; background: var(--accent); cursor: pointer; color: #000; font-size: 1.2rem; }
+        
+        .btn-ui { padding: 8px 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: 800; font-size: 0.7rem; transition: 0.3s; }
+        .btn-accent { background: var(--accent); color: #000; }
+        .btn-logout { background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--glass-border); }
+        .btn-send { width: 55px; border-radius: 15px; background: var(--accent); font-size: 1.2rem; }
+
+        /* Overlay Assistenza */
+        #assist-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        .assist-content { max-width: 600px; margin: 40px auto; background: var(--panel); border: 1px solid var(--glass-border); border-radius: 20px; padding: 25px; }
+        .req-card { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .req-actions { display: flex; gap: 10px; margin-top: 10px; }
+        .status-badge { font-size: 0.6rem; padding: 3px 8px; border-radius: 5px; text-transform: uppercase; margin-left: 10px; }
 
         @keyframes emerge { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -42,15 +52,25 @@
 
 <header>
     <div style="font-weight: 800; letter-spacing: 2px; background: linear-gradient(to right, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">KYROS IA</div>
-    <div class="status" id="statusLabel">SINCRONIZZAZIONE...</div>
-    <button onclick="logout()" style="width: auto; padding: 5px 10px; font-size: 0.6rem; background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--glass-border); cursor: pointer; border-radius: 8px;">LOGOUT</button>
+    <div class="status" id="statusLabel">...</div>
+    <button onclick="toggleAssist()" class="btn-ui btn-accent">ASSISTENZA</button>
+    <button onclick="logout()" class="btn-ui btn-logout">LOGOUT</button>
 </header>
 
 <div id="chat-window"></div>
 
 <div class="input-area">
     <input type="text" id="userInput" placeholder="Invia un messaggio..." autocomplete="off">
-    <button onclick="handleSend()">🚀</button>
+    <button onclick="handleSend()" class="btn-ui btn-send"></button>
+</div>
+
+<div id="assist-overlay">
+    <div class="assist-content">
+        <h2 id="assist-title">Assistenza</h2>
+        <div id="assist-body">
+            </div>
+        <button onclick="toggleAssist()" class="btn-ui btn-logout" style="width: 100%; margin-top: 20px;">CHIUDI</button>
+    </div>
 </div>
 
 <script>
@@ -66,6 +86,7 @@
 
     let isMaintenance = localStorage.getItem('kyros_maintenance') === 'true';
     let blacklist = JSON.parse(localStorage.getItem('kyros_blacklist')) || [];
+    let assistRequests = JSON.parse(localStorage.getItem('kyros_assist')) || [];
 
     if (!currentNick) { window.location.href = "index.html"; }
 
@@ -73,33 +94,113 @@
         if (userRole === "Owner") {
             statusLabel.innerText = "OWNER: " + currentNick;
             statusLabel.style.color = "var(--owner-color)";
-            addMsg("ai", `Benvenuto <b>Fire</b>, Ho sbloccato tutti i sistemi per te.`);
+            addMsg("ai", `Benvenuto <b>Fire</b>, sistemi pronti.`);
         } else {
             statusLabel.innerText = "UTENTE: " + currentNick;
-            addMsg("ai", `Ciao! Benvenuto in <b>KyrosIA</b>, Cosa ti serve?`);
+            addMsg("ai", `Ciao <b>${currentNick}</b>! Come posso aiutarti?`);
         }
     }
 
+    // --- LOGICA ASSISTENZA ---
+    function toggleAssist() {
+        const overlay = document.getElementById('assist-overlay');
+        const body = document.getElementById('assist-body');
+        overlay.style.display = (overlay.style.display === 'block') ? 'none' : 'block';
+        
+        if (overlay.style.display === 'block') renderAssist();
+    }
+
+    function renderAssist() {
+        const body = document.getElementById('assist-body');
+        body.innerHTML = "";
+
+        if (userRole === "Owner") {
+            document.getElementById('assist-title').innerText = "Pannello Richieste (Admin)";
+            if (assistRequests.length === 0) body.innerHTML = "<p>Nessuna richiesta pendente.</p>";
+            
+            assistRequests.forEach((req, index) => {
+                body.innerHTML += `
+                    <div class="req-card">
+                        <p><b>Utente:</b> ${req.user} <span class="status-badge" style="background:${getStatusColor(req.status)}">${req.status}</span></p>
+                        <p><b>Messaggio:</b> ${req.text}</p>
+                        ${req.status === 'pendente' ? `
+                            <div class="req-actions">
+                                <button onclick="actionReq(${index}, 'risolto')" class="btn-ui" style="background:var(--success)">RISOLTO</button>
+                                <button onclick="actionReq(${index}, 'rifiutato')" class="btn-ui" style="background:var(--danger)">RIFIUTA</button>
+                            </div>
+                        ` : `<p><small>Nota Owner: ${req.note || "Nessuna"}</small></p>`}
+                    </div>`;
+            });
+        } else {
+            document.getElementById('assist-title').innerText = "La tua Assistenza";
+            body.innerHTML = `
+                <div class="req-card">
+                    <p><b>Nuova Richiesta per ${currentNick}:</b></p>
+                    <textarea id="assistText" placeholder="Descrivi il tuo problema..." style="width:100%; height:80px; background:rgba(0,0,0,0.2); color:white; border:1px solid var(--glass-border); border-radius:10px; padding:10px; box-sizing:border-box;"></textarea>
+                    <button onclick="sendAssist()" class="btn-ui btn-accent" style="width:100%; margin-top:10px;">INVIA RICHIESTA</button>
+                </div>
+                <hr style="border:0; border-top:1px solid var(--glass-border); margin:20px 0;">
+                <p><b>Storico Richieste:</b></p>
+            `;
+            
+            const myReqs = assistRequests.filter(r => r.user === currentNick);
+            myReqs.reverse().forEach(req => {
+                body.innerHTML += `
+                    <div class="req-card">
+                        <span class="status-badge" style="background:${getStatusColor(req.status)}">${req.status}</span>
+                        <p style="margin-top:10px;">${req.text}</p>
+                        ${req.note ? `<p style="font-size:0.8rem; color:var(--accent)">Nota: ${req.note}</p>` : ""}
+                    </div>`;
+            });
+        }
+    }
+
+    function sendAssist() {
+        const text = document.getElementById('assistText').value.trim();
+        if (!text) return alert("Inserisci un motivo.");
+        
+        assistRequests.push({
+            user: currentNick,
+            text: text,
+            status: 'pendente',
+            note: ''
+        });
+        saveAssist();
+        renderAssist();
+    }
+
+    function actionReq(index, status) {
+        const note = prompt("Aggiungi un commento/informazione per l'utente:");
+        assistRequests[index].status = status;
+        assistRequests[index].note = note || "";
+        saveAssist();
+        renderAssist();
+    }
+
+    function getStatusColor(s) {
+        if(s === 'risolto') return 'var(--success)';
+        if(s === 'rifiutato') return 'var(--danger)';
+        return 'var(--accent)';
+    }
+
+    function saveAssist() {
+        localStorage.setItem('kyros_assist', JSON.stringify(assistRequests));
+    }
+
+    // --- LOGICA CHAT (Standard) ---
     async function handleSend() {
         const text = input.value.trim();
         if (!text) return;
-
         if (blacklist.includes(currentNick) && userRole !== "Owner") {
             addMsg("ai", "<b>ERRORE:</b> Sei bannato.");
             return;
         }
-
         addMsg("user", text);
         input.value = "";
 
         if (text.startsWith("/")) {
             if (userRole === "Owner") handleCommands(text);
             else addMsg("ai", "<b>ERRORE:</b> Solo l'Owner ha accesso ai comandi.");
-            return;
-        }
-
-        if (isMaintenance && userRole !== "Owner") {
-            addMsg("ai", "<b>OFFLINE:</b> Manutenzione in corso.");
             return;
         }
 
@@ -113,7 +214,7 @@
                 body: JSON.stringify({
                     model: "llama-3.3-70b-versatile",
                     messages: [
-                        {role: "system", content: "Sei KyrosIA, creato da firethesuper. Sei audace, intelligente e tecnico."},
+                        {role: "system", content: "Sei KyrosIA, creato da firethesuper."},
                         {role: "user", content: text}
                     ]
                 })
@@ -129,51 +230,29 @@
         const p = text.split(" ");
         const cmd = p[0].toLowerCase();
         const target = p[1];
-
-        switch(cmd) {
-            case "/ban":
-                if(!target) return addMsg("ai", "Specifica un utente.");
-                if(!blacklist.includes(target)) blacklist.push(target);
-                localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
-                addMsg("ai", `Utente <b>${target}</b> bannato.`);
-                break;
-            case "/unban":
-                blacklist = blacklist.filter(u => u !== target);
-                localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
-                addMsg("ai", `Utente <b>${target}</b> unbannato.`);
-                break;
-            case "/manutenzione":
-                isMaintenance = !isMaintenance;
-                localStorage.setItem('kyros_maintenance', isMaintenance);
-                addMsg("ai", `Manutenzione: <b>${isMaintenance ? "ATTIVA" : "DISATTIVA"}</b>`);
-                break;
-            case "/accountlist":
-                addMsg("ai", `<b>Blacklist:</b> ${blacklist.join(", ") || "Vuota"}`);
-                break;
-            case "/help":
-                addMsg("ai", "<b>Comandi:</b> /ban, /unban, /manutenzione, /accountlist");
-                break;
-            default: addMsg("ai", "Comando sconosciuto.");
+        if(cmd === "/ban") {
+            blacklist.push(target);
+            localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
+            addMsg("ai", `Utente <b>${target}</b> bannato.`);
         }
+        if(cmd === "/unban") {
+            blacklist = blacklist.filter(u => u !== target);
+            localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
+            addMsg("ai", `Utente <b>${target}</b> unbannato.`);
+        }
+        if(cmd === "/help") addMsg("ai", "/ban [nome], /unban [nome], /accountlist");
     }
 
     function addMsg(type, text, id = "") {
         const div = document.createElement('div');
         div.className = `msg ${type} ${ (type === 'user' && userRole === 'Owner') ? 'owner-msg' : '' }`;
         if(id) div.id = id;
-        
-        // Nessun prefisso con nome, solo il testo del messaggio
         div.innerHTML = text; 
-        
         chatWin.appendChild(div);
         chatWin.scrollTop = chatWin.scrollHeight;
     }
 
-    function logout() {
-        sessionStorage.clear();
-        window.location.href = "index.html";
-    }
-
+    function logout() { sessionStorage.clear(); window.location.href = "index.html"; }
     input.onkeypress = (e) => { if(e.key === 'Enter') handleSend(); };
     init();
 </script>
