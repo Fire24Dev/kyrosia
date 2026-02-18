@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KyrosIA - Evolution</title>
+    <title>KyrosIA - Secure Evolution</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -85,18 +85,17 @@
 </header>
 
 <div id="chat-window">
-    <div class="msg ai" id="welcome-msg">Inizializzazione sistemi in corso...</div>
+    <div class="msg ai" id="welcome-msg">Sincronizzazione in corso...</div>
 </div>
 
 <div class="input-wrapper">
     <div class="input-container">
-        <input type="text" id="userInput" placeholder="Invia un messaggio..." autocomplete="off">
+        <input type="text" id="userInput" placeholder="Scrivi un messaggio..." autocomplete="off">
         <button class="icon-btn" id="sendBtn">🚀</button>
     </div>
 </div>
 
 <script>
-    // --- CHIAVE API ---
     const _0xkey = [103,115,107,95,52,114,52,97,112,122,67,70,98,116,106,105,86,74,54,110,77,56,101,48,87,71,100,121,98,51,70,89,87,79,109,101,90,67,90,103,67,80,90,74,69,121,57,52,78,68,80,74,104,108,79,100];
     const _vault = () => _0xkey.map(c => String.fromCharCode(c)).join('');
 
@@ -106,28 +105,105 @@
     const statusLabel = document.getElementById('system-status');
     const welcome = document.getElementById('welcome-msg');
 
-    // --- LOGICA IDENTITÀ (Prende il nome dal login di index.html) ---
-    // Assicurati che nel tuo index.html, al login, tu faccia: localStorage.setItem('username', nomeUtente);
+    // STATO LOGIN
     let currentNickname = localStorage.getItem('username') || "Ospite";
+    let isOwnerAuthenticated = false; // Diventa true solo con password
     
+    // DB LOCALE
     let isMaintenance = localStorage.getItem('kyros_maintenance') === 'true';
     let blacklist = JSON.parse(localStorage.getItem('kyros_blacklist')) || [];
     let mutes = JSON.parse(localStorage.getItem('kyros_mutes')) || {};
 
-    function updateUI() {
-        if (currentNickname === "firethesuper") {
+    function init() {
+        const wantsToBeOwner = (currentNickname.toLowerCase() === "firethesuper");
+        
+        if (wantsToBeOwner && !isOwnerAuthenticated) {
+            statusLabel.innerText = "ACCESSO PROTETTO";
+            statusLabel.style.color = "var(--danger)";
+            welcome.innerHTML = "Rilevato nickname Owner. Per favore, <b>inserisci la password</b> per sbloccare i protocolli.";
+            input.type = "password"; 
+            input.placeholder = "Password di sicurezza...";
+        } else if (isOwnerAuthenticated) {
             statusLabel.innerText = "OWNER: firethesuper";
             statusLabel.style.color = "var(--owner-color)";
-            welcome.innerHTML = "Bentornato, <b>Owner</b>. Protocolli di comando pronti.";
-        } else if (isMaintenance) {
-            statusLabel.innerText = "MANUTENZIONE";
-            statusLabel.style.color = "var(--danger)";
-            welcome.innerHTML = "Il sistema è attualmente in manutenzione.";
+            welcome.innerHTML = "Autenticazione completata. Benvenuto, <b>Owner</b>.";
+            input.type = "text";
+            input.placeholder = "Messaggio o comando...";
         } else {
             statusLabel.innerText = "UTENTE: " + currentNickname;
             statusLabel.style.color = "var(--accent)";
-            welcome.innerHTML = `Ciao <b>${currentNickname}</b>! Sono KyrosIA. In cosa posso aiutarti?`;
+            welcome.innerHTML = `Identità: <b>${currentNickname}</b>. Come posso aiutarti?`;
+            input.type = "text";
         }
+    }
+
+    async function handleMessage() {
+        const text = input.value.trim();
+        if (!text) return;
+
+        // --- GESTIONE PASSWORD OWNER ---
+        if (currentNickname.toLowerCase() === "firethesuper" && !isOwnerAuthenticated) {
+            if (text === "Auromat1730!") {
+                isOwnerAuthenticated = true;
+                input.value = '';
+                init();
+                addAiMsg("Password corretta. Poteri di amministrazione attivati.");
+            } else {
+                addAiMsg("Password errata. Riprova o cambia account.");
+                input.value = '';
+            }
+            return;
+        }
+
+        // --- CONTROLLO BAN / MUTE ---
+        if (blacklist.includes(currentNickname) && !isOwnerAuthenticated) {
+            addAiMsg("Accesso negato. Sei stato bannato.");
+            input.value = '';
+            return;
+        }
+
+        const muteLeft = checkMute(currentNickname);
+        if (muteLeft > 0 && !isOwnerAuthenticated) {
+            addAiMsg(`Sei mutato per altri ${muteLeft} minuti.`);
+            input.value = '';
+            return;
+        }
+
+        // --- INVIO MESSAGGIO ---
+        windowChat.innerHTML += `<div class="msg user ${isOwnerAuthenticated ? 'owner-msg' : ''}">${text}</div>`;
+        input.value = '';
+        windowChat.scrollTop = windowChat.scrollHeight;
+
+        // COMANDI
+        if (text.startsWith("/")) {
+            if (isOwnerAuthenticated) handleCommands(text);
+            else addAiMsg("Permessi insufficienti.");
+            return;
+        }
+
+        // MANUTENZIONE
+        if (isMaintenance && !isOwnerAuthenticated) {
+            addAiMsg("Il sistema è in manutenzione.");
+            return;
+        }
+
+        // CHIAMATA AI
+        const tempId = "ai-" + Date.now();
+        windowChat.innerHTML += `<div class="msg ai" id="${tempId}">...</div>`;
+        
+        try {
+            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${_vault()}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    model: "llama-3.3-70b-versatile",
+                    messages: [{ role: "system", content: "Sei KyrosIA, creato da firethesuper." }, { role: "user", content: text }]
+                })
+            });
+            const data = await response.json();
+            document.getElementById(tempId).innerText = data.choices[0].message.content;
+        } catch (e) { document.getElementById(tempId).innerText = "Errore nucleo."; }
+        windowChat.scrollTop = windowChat.scrollHeight;
     }
 
     function checkMute(nick) {
@@ -140,125 +216,55 @@
         return 0;
     }
 
-    async function execute() {
-        const val = input.value.trim();
-        if (!val) return;
-
-        const isOwner = (currentNickname === "firethesuper");
-
-        // Sicurezza: Ban
-        if (blacklist.includes(currentNickname) && !isOwner) {
-            addAiMsg("Accesso negato. Sei stato bannato dai sistemi Kyros.");
-            input.value = '';
-            return;
-        }
-
-        // Sicurezza: Mute
-        const mTime = checkMute(currentNickname);
-        if (mTime > 0 && !isOwner) {
-            addAiMsg(`Sei silenziato. Potrai parlare tra ${mTime} minuti.`);
-            input.value = '';
-            return;
-        }
-
-        // Messaggio Utente
-        windowChat.innerHTML += `<div class="msg user ${isOwner ? 'owner-msg' : ''}">${val}</div>`;
-        input.value = '';
-        windowChat.scrollTop = windowChat.scrollHeight;
-
-        // Comandi Owner
-        if (val.startsWith("/")) {
-            if (isOwner) handleCmd(val);
-            else addAiMsg("Comando non riconosciuto o permessi insufficienti.");
-            return;
-        }
-
-        // Blocco Manutenzione
-        if (isMaintenance && !isOwner) {
-            addAiMsg("Sistemi offline per manutenzione. Solo l'Owner può comunicare.");
-            return;
-        }
-
-        // Chiamata AI
-        const loadId = "ai-" + Date.now();
-        windowChat.innerHTML += `<div class="msg ai" id="${loadId}">...</div>`;
-        
-        try {
-            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${_vault()}`, "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    model: "llama-3.3-70b-versatile",
-                    messages: [
-                        { role: "system", content: "Sei KyrosIA, creato da firethesuper. Rispondi in modo brillante in italiano." },
-                        { role: "user", content: val }
-                    ]
-                })
-            });
-            const data = await response.json();
-            document.getElementById(loadId).innerHTML = data.choices[0].message.content;
-        } catch (e) { document.getElementById(loadId).innerText = "Errore di connessione al nucleo."; }
-        windowChat.scrollTop = windowChat.scrollHeight;
-    }
-
-    function handleCmd(text) {
-        const args = text.split(" ");
-        const cmd = args[0].toLowerCase();
-        const target = args[1];
-        const time = parseInt(args[2]);
+    function handleCommands(text) {
+        const p = text.split(" ");
+        const cmd = p[0].toLowerCase();
+        const target = p[1];
+        const val = parseInt(p[2]);
 
         switch(cmd) {
             case "/help":
-                addAiMsg("<b>Comandi disponibili:</b> /ban [nome], /unban [nome], /mute [nome] [min], /unmute [nome], /manutenzione, /accountlist");
+                addAiMsg("<b>Comandi:</b> /ban, /unban, /mute, /unmute, /manutenzione, /accountlist");
                 break;
             case "/ban":
-                if (!target) return addAiMsg("Uso: /ban [nome]");
-                if (!blacklist.includes(target)) blacklist.push(target);
+                if (target === "firethesuper") return addAiMsg("Impossibile bannare l'Owner.");
+                blacklist.push(target);
                 localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
-                addAiMsg(`Utente ${target} bannato con successo.`);
+                addAiMsg(`Utente ${target} bannato.`);
                 break;
             case "/unban":
                 blacklist = blacklist.filter(u => u !== target);
                 localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
-                addAiMsg(`Utente ${target} riabilitato.`);
+                addAiMsg(`Utente ${target} sbannato.`);
                 break;
             case "/mute":
-                if (!target || !time) return addAiMsg("Uso: /mute [nome] [minuti]");
-                mutes[target] = Date.now() + (time * 60000);
+                mutes[target] = Date.now() + (val * 60000);
                 localStorage.setItem('kyros_mutes', JSON.stringify(mutes));
-                addAiMsg(`${target} silenziato per ${time} minuti.`);
+                addAiMsg(`${target} mutato.`);
                 break;
             case "/unmute":
                 delete mutes[target];
                 localStorage.setItem('kyros_mutes', JSON.stringify(mutes));
-                addAiMsg(`${target} può tornare a parlare.`);
+                addAiMsg(`${target} smutato.`);
                 break;
             case "/manutenzione":
                 isMaintenance = !isMaintenance;
                 localStorage.setItem('kyros_maintenance', isMaintenance);
-                updateUI();
-                addAiMsg("Modalità manutenzione: " + (isMaintenance ? "ATTIVA" : "DISATTIVA"));
+                init();
+                addAiMsg("Manutenzione: " + isMaintenance);
                 break;
             case "/accountlist":
-                addAiMsg(`<b>BANNATI:</b> ${blacklist.join(", ") || "Nessuno"}<br><b>MUTATI:</b> ${Object.keys(mutes).join(", ") || "Nessuno"}`);
+                addAiMsg(`BANNATI: ${blacklist.join(", ")} | MUTATI: ${Object.keys(mutes).join(", ")}`);
                 break;
         }
     }
 
-    function addAiMsg(t) { 
-        windowChat.innerHTML += `<div class="msg ai">${t}</div>`; 
-        windowChat.scrollTop = windowChat.scrollHeight; 
-    }
-    
-    function newChat() {
-        windowChat.innerHTML = "";
-        updateUI();
-    }
+    function addAiMsg(t) { windowChat.innerHTML += `<div class="msg ai">${t}</div>`; windowChat.scrollTop = windowChat.scrollHeight; }
+    function newChat() { windowChat.innerHTML = ""; init(); }
 
-    // Inizializzazione automatica al caricamento
-    updateUI();
-    btn.onclick = execute;
-    input.onkeypress = (e) => { if (e.key === 'Enter') execute(); };
+    init();
+    btn.onclick = handleMessage;
+    input.onkeypress = (e) => { if (e.key === 'Enter') handleMessage(); };
 </script>
 </body>
 </html>
