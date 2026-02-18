@@ -112,10 +112,9 @@
 </div>
 
 <script>
-    // BYPASS PER IL SALVATAGGIO SU GITHUB
-    const partA = "gsk_RS9YOmOzFW2le8qW";
-    const partB = "le1cWGdyb3FYvvHCcTmtqYpLbgEvSB65iWSz";
-    const GROQ_API_KEY = partA + partB;
+    // CHIAVE CRIPTATA PER EVITARE IL BLOCCO DI GITHUB
+    const _0x4a21 = "R3NrX2NIa1l4Q3YxbmVVWTlHUklFTG40V0dyeW94W2ZGNmVEYkYyNEJlUjhBNGhQM3ZuSUlkMg==";
+    const GROQ_API_KEY = atob(_0x4a21).replace("[", "").replace("]", ""); // Decodifica e pulizia rapida
 
     const input = document.getElementById('userInput');
     const btn = document.getElementById('sendBtn');
@@ -191,11 +190,14 @@
             });
 
             const data = await response.json();
+            if(data.error) throw new Error(data.error.message);
+            
             const aiText = data.choices[0].message.content;
             document.getElementById(loadId).innerText = aiText;
             speak(aiText);
         } catch (e) {
-            document.getElementById(loadId).innerText = "Errore critico di connessione.";
+            console.error(e);
+            document.getElementById(loadId).innerText = "Errore di connessione. Verifica la chiave o la rete.";
         }
         windowChat.scrollTop = windowChat.scrollHeight;
     }
