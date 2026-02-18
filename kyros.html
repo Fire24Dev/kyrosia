@@ -38,7 +38,6 @@
         .btn-logout { background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--glass-border); }
         .btn-send { width: 55px; border-radius: 15px; background: var(--accent); font-size: 1.2rem; }
 
-        /* Overlay Assistenza */
         #assist-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         .assist-content { max-width: 600px; margin: 40px auto; background: var(--panel); border: 1px solid var(--glass-border); border-radius: 20px; padding: 25px; }
         .req-card { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
@@ -67,8 +66,7 @@
 <div id="assist-overlay">
     <div class="assist-content">
         <h2 id="assist-title">Assistenza</h2>
-        <div id="assist-body">
-            </div>
+        <div id="assist-body"></div>
         <button onclick="toggleAssist()" class="btn-ui btn-logout" style="width: 100%; margin-top: 20px;">CHIUDI</button>
     </div>
 </div>
@@ -99,14 +97,13 @@
             statusLabel.innerText = "UTENTE: " + currentNick;
             addMsg("ai", `Ciao <b>${currentNick}</b>! Come posso aiutarti?`);
         }
+        if(isMaintenance) statusLabel.innerText += " (MANUTENZIONE)";
     }
 
     // --- LOGICA ASSISTENZA ---
     function toggleAssist() {
         const overlay = document.getElementById('assist-overlay');
-        const body = document.getElementById('assist-body');
         overlay.style.display = (overlay.style.display === 'block') ? 'none' : 'block';
-        
         if (overlay.style.display === 'block') renderAssist();
     }
 
@@ -117,7 +114,6 @@
         if (userRole === "Owner") {
             document.getElementById('assist-title').innerText = "Pannello Richieste (Admin)";
             if (assistRequests.length === 0) body.innerHTML = "<p>Nessuna richiesta pendente.</p>";
-            
             assistRequests.forEach((req, index) => {
                 body.innerHTML += `
                     <div class="req-card">
@@ -142,7 +138,6 @@
                 <hr style="border:0; border-top:1px solid var(--glass-border); margin:20px 0;">
                 <p><b>Storico Richieste:</b></p>
             `;
-            
             const myReqs = assistRequests.filter(r => r.user === currentNick);
             myReqs.reverse().forEach(req => {
                 body.innerHTML += `
@@ -158,13 +153,7 @@
     function sendAssist() {
         const text = document.getElementById('assistText').value.trim();
         if (!text) return alert("Inserisci un motivo.");
-        
-        assistRequests.push({
-            user: currentNick,
-            text: text,
-            status: 'pendente',
-            note: ''
-        });
+        assistRequests.push({ user: currentNick, text: text, status: 'pendente', note: '' });
         saveAssist();
         renderAssist();
     }
@@ -183,24 +172,29 @@
         return 'var(--accent)';
     }
 
-    function saveAssist() {
-        localStorage.setItem('kyros_assist', JSON.stringify(assistRequests));
-    }
+    function saveAssist() { localStorage.setItem('kyros_assist', JSON.stringify(assistRequests)); }
 
-    // --- LOGICA CHAT (Standard) ---
+    // --- LOGICA CHAT ---
     async function handleSend() {
         const text = input.value.trim();
         if (!text) return;
+        
         if (blacklist.includes(currentNick) && userRole !== "Owner") {
             addMsg("ai", "<b>ERRORE:</b> Sei bannato.");
             return;
         }
+
         addMsg("user", text);
         input.value = "";
 
         if (text.startsWith("/")) {
             if (userRole === "Owner") handleCommands(text);
             else addMsg("ai", "<b>ERRORE:</b> Solo l'Owner ha accesso ai comandi.");
+            return;
+        }
+
+        if (isMaintenance && userRole !== "Owner") {
+            addMsg("ai", "<b>OFFLINE:</b> Manutenzione in corso. Riprova pi� tardi.");
             return;
         }
 
@@ -214,7 +208,7 @@
                 body: JSON.stringify({
                     model: "llama-3.3-70b-versatile",
                     messages: [
-                        {role: "system", content: "Sei KyrosIA, creato da firethesuper."},
+                        {role: "system", content: "Sei KyrosIA, creato da firethesuper. Rispondi in modo tecnico e audace."},
                         {role: "user", content: text}
                     ]
                 })
@@ -222,7 +216,7 @@
             const data = await resp.json();
             document.getElementById(tempId).innerHTML = data.choices[0].message.content;
         } catch (e) {
-            document.getElementById(tempId).innerText = "Errore di rete.";
+            document.getElementById(tempId).innerText = "Errore di connessione.";
         }
     }
 
@@ -230,17 +224,33 @@
         const p = text.split(" ");
         const cmd = p[0].toLowerCase();
         const target = p[1];
-        if(cmd === "/ban") {
-            blacklist.push(target);
-            localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
-            addMsg("ai", `Utente <b>${target}</b> bannato.`);
+
+        switch(cmd) {
+            case "/ban":
+                if(!target) return addMsg("ai", "Specifica un utente.");
+                blacklist.push(target);
+                localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
+                addMsg("ai", `Utente <b>${target}</b> bannato.`);
+                break;
+            case "/unban":
+                blacklist = blacklist.filter(u => u !== target);
+                localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
+                addMsg("ai", `Utente <b>${target}</b> unbannato.`);
+                break;
+            case "/manutenzione":
+                isMaintenance = !isMaintenance;
+                localStorage.setItem('kyros_maintenance', isMaintenance);
+                statusLabel.innerText = isMaintenance ? `OWNER: ${currentNick} (MANUTENZIONE)` : `OWNER: ${currentNick}`;
+                addMsg("ai", `Manutenzione impostata su: <b>${isMaintenance ? "ATTIVA" : "DISATTIVA"}</b>`);
+                break;
+            case "/accountlist":
+                addMsg("ai", `<b>Blacklist:</b> ${blacklist.join(", ") || "Vuota"}`);
+                break;
+            case "/help":
+                addMsg("ai", "<b>Comandi Admin:</b> /ban, /unban, /manutenzione, /accountlist");
+                break;
+            default: addMsg("ai", "Comando non riconosciuto.");
         }
-        if(cmd === "/unban") {
-            blacklist = blacklist.filter(u => u !== target);
-            localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
-            addMsg("ai", `Utente <b>${target}</b> unbannato.`);
-        }
-        if(cmd === "/help") addMsg("ai", "/ban [nome], /unban [nome], /accountlist");
     }
 
     function addMsg(type, text, id = "") {
