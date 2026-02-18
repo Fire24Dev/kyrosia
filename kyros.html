@@ -81,22 +81,21 @@
         <h1>KYROS IA</h1>
         <div class="status" id="system-status">SISTEMA ONLINE</div>
     </div>
-    <button class="new-chat-btn" onclick="newChat()">NUOVA CHAT</button>
+    <button class="new-chat-btn" onclick="logout()">LOGOUT</button>
 </header>
 
 <div id="chat-window">
-    <div class="msg ai">Ciao! Benvenuto su <b>KyrosIA</b>, Cosa ti serve?</div>
+    <div class="msg ai">Sistemi inizializzati. Identificati per continuare.</div>
 </div>
 
 <div class="input-wrapper">
     <div class="input-container">
-        <input type="text" id="userInput" placeholder="Messaggio o comando..." autocomplete="off">
+        <input type="text" id="userInput" placeholder="Digita il tuo nome utente..." autocomplete="off">
         <button class="icon-btn" id="sendBtn">🚀</button>
     </div>
 </div>
 
 <script>
-    // --- BYPASS GITHUB ---
     const _0xkey = [103,115,107,95,52,114,52,97,112,122,67,70,98,116,106,105,86,74,54,110,77,56,101,48,87,71,100,121,98,51,70,89,87,79,109,101,90,67,90,103,67,80,90,74,69,121,57,52,78,68,80,74,104,108,79,100];
     const _vault = () => _0xkey.map(c => String.fromCharCode(c)).join('');
 
@@ -105,180 +104,157 @@
     const windowChat = document.getElementById('chat-window');
     const statusLabel = document.getElementById('system-status');
 
-    const currentRole = sessionStorage.getItem('kyros_role') || "User";
+    // Recupero Dati
+    let currentUsername = sessionStorage.getItem('kyros_user');
     let isMaintenance = localStorage.getItem('kyros_maintenance') === 'true';
     let blacklist = JSON.parse(localStorage.getItem('kyros_blacklist')) || [];
-    let mutes = JSON.parse(localStorage.getItem('kyros_mutes')) || {}; 
+    let mutes = JSON.parse(localStorage.getItem('kyros_mutes')) || {};
 
     function initInterface() {
-        if (currentRole === "Owner") {
-            statusLabel.innerText = "OWNER: firethesuper";
+        if (!currentUsername) {
+            statusLabel.innerText = "LOGIN RICHIESTO";
+            input.placeholder = "Inserisci il tuo nome utente...";
+            return;
+        }
+        
+        if (currentUsername === "firethesuper") {
+            statusLabel.innerText = "OWNER MODE";
             statusLabel.style.color = "var(--owner-color)";
         } else if (isMaintenance) {
             statusLabel.innerText = "MANUTENZIONE";
             statusLabel.style.color = "var(--danger)";
         } else {
-            statusLabel.innerText = "SISTEMA ONLINE";
+            statusLabel.innerText = "UTENTE: " + currentUsername;
             statusLabel.style.color = "var(--accent)";
         }
+        input.placeholder = "Messaggio o comando...";
     }
 
-    function checkMute() {
-        if (mutes[currentRole]) {
+    function checkMute(user) {
+        if (mutes[user]) {
             const now = Date.now();
-            if (now < mutes[currentRole]) {
-                const remaining = Math.ceil((mutes[currentRole] - now) / 60000);
-                return remaining;
-            } else {
-                delete mutes[currentRole];
-                localStorage.setItem('kyros_mutes', JSON.stringify(mutes));
-            }
+            if (now < mutes[user]) return Math.ceil((mutes[user] - now) / 60000);
+            else { delete mutes[user]; localStorage.setItem('kyros_mutes', JSON.stringify(mutes)); }
         }
         return 0;
     }
 
-    async function askKyros() {
+    async function handleAction() {
         const text = input.value.trim();
         if (!text) return;
 
-        if (blacklist.includes(currentRole) && currentRole !== "Owner") {
+        // Gestione Login
+        if (!currentUsername) {
+            currentUsername = text;
+            sessionStorage.setItem('kyros_user', text);
+            windowChat.innerHTML += `<div class="msg ai">Benvenuto <b>${text}</b>. Nucleo Kyros pronto.</div>`;
             input.value = '';
-            addAiMessage("Accesso negato. Sei stato bannato definitivamente.");
+            initInterface();
             return;
         }
 
-        const muteRemaining = checkMute();
-        if (muteRemaining > 0 && currentRole !== "Owner") {
+        // Verifica Ban
+        if (blacklist.includes(currentUsername) && currentUsername !== "firethesuper") {
+            addAiMessage("ERRORE: Accesso negato. Questa unità è stata terminata.");
             input.value = '';
-            addAiMessage(`Sei mutato. Restano: ${muteRemaining} min.`);
             return;
         }
 
-        const ownerClass = (currentRole === "Owner") ? "owner-msg" : "";
-        windowChat.innerHTML += `<div class="msg user ${ownerClass}">${text}</div>`;
+        // Verifica Mute
+        const muteTime = checkMute(currentUsername);
+        if (muteTime > 0 && currentUsername !== "firethesuper") {
+            addAiMessage(`Sei silenziato per altri ${muteTime} minuti.`);
+            input.value = '';
+            return;
+        }
+
+        const isOwner = currentUsername === "firethesuper";
+        windowChat.innerHTML += `<div class="msg user ${isOwner ? 'owner-msg' : ''}">${text}</div>`;
         input.value = '';
         windowChat.scrollTop = windowChat.scrollHeight;
 
+        // Gestione Comandi
         if (text.startsWith("/")) {
-            if (currentRole === "Owner") {
-                handleCommands(text);
-            } else {
-                addAiMessage("Comando riservato all'Owner.");
-            }
+            if (isOwner) handleCommands(text);
+            else addAiMessage("Solo l'Owner può eseguire protocolli.");
             return;
         }
 
-        if (isMaintenance && currentRole !== "Owner") {
-            addAiMessage("Sistema in manutenzione. Riprova più tardi.");
+        // Manutenzione
+        if (isMaintenance && !isOwner) {
+            addAiMessage("Sistema in manutenzione forzata.");
             return;
         }
 
+        // Risposta AI
         const loadId = "id-" + Date.now();
         windowChat.innerHTML += `<div class="msg ai" id="${loadId}">...</div>`;
-        windowChat.scrollTop = windowChat.scrollHeight;
-
+        
         try {
             const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${_vault()}`,
-                    "Content-Type": "application/json"
-                },
+                headers: { "Authorization": `Bearer ${_vault()}`, "Content-Type": "application/json" },
                 body: JSON.stringify({
                     model: "llama-3.3-70b-versatile",
-                    messages: [
-                        { role: "system", content: "Sei KyrosIA, creato da firethesuper. Rispondi in modo conciso in italiano." },
-                        { role: "user", content: text }
-                    ]
+                    messages: [{ role: "system", content: "Sei KyrosIA, creato da firethesuper." }, { role: "user", content: text }]
                 })
             });
-
             const data = await response.json();
-            document.getElementById(loadId).innerText = data.choices[0].message.content;
-        } catch (e) {
-            document.getElementById(loadId).innerText = "Errore di connessione.";
-        }
-        windowChat.scrollTop = windowChat.scrollHeight;
-    }
-
-    function addAiMessage(text) {
-        windowChat.innerHTML += `<div class="msg ai">${text}</div>`;
+            document.getElementById(loadId).innerHTML = data.choices[0].message.content;
+        } catch (e) { document.getElementById(loadId).innerText = "Errore API."; }
         windowChat.scrollTop = windowChat.scrollHeight;
     }
 
     function handleCommands(text) {
-        const parts = text.split(" ");
-        const cmd = parts[0].toLowerCase();
-        const target = parts[1];
-        const time = parseInt(parts[2]);
+        const p = text.split(" ");
+        const cmd = p[0].toLowerCase();
+        const target = p[1];
+        const val = parseInt(p[2]);
 
         switch(cmd) {
-            case "/help":
-                addAiMessage(`<b>LISTA PROTOCOLLI KYROS:</b><br><br>
-                <b>/manutenzione</b> - Attiva/Disattiva blocco globale<br>
-                <b>/ban [nome]</b> - Ban permanente utente<br>
-                <b>/unban [nome]</b> - Rimuovi ban<br>
-                <b>/mute [nome] [min]</b> - Silenzia utente temporaneamente<br>
-                <b>/unmute [nome]</b> - Rimuovi silenzio<br>
-                <b>/accountlist</b> - Visualizza stato database<br>
-                <b>/help</b> - Mostra questa interfaccia`);
-                break;
-
-            case "/manutenzione":
-                isMaintenance = !isMaintenance;
-                localStorage.setItem('kyros_maintenance', isMaintenance);
-                addAiMessage(`Stato Manutenzione: ${isMaintenance ? 'ATTIVO' : 'DISATTIVATO'}`);
-                initInterface();
-                break;
-
             case "/ban":
-                if (!target) return addAiMessage("Specificare utente: /ban [nome]");
-                if (target === "firethesuper") return addAiMessage("Impossibile bannare l'Owner.");
-                if (!blacklist.includes(target)) blacklist.push(target);
+                if (!target) return addAiMessage("Uso: /ban nome");
+                blacklist.push(target);
                 localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
-                addAiMessage(`Unità ${target} bannata.`);
+                addAiMessage(`Unità ${target} bandita.`);
                 break;
-
             case "/unban":
-                if (!target) return addAiMessage("Specificare utente: /unban [nome]");
                 blacklist = blacklist.filter(u => u !== target);
                 localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
-                addAiMessage(`Unità ${target} riabilitata.`);
+                addAiMessage(`Unità ${target} ripristinata.`);
                 break;
-
             case "/mute":
-                if (!target || !time) return addAiMessage("Uso: /mute [nome] [minuti]");
-                if (target === "firethesuper") return addAiMessage("Impossibile mutare l'Owner.");
-                mutes[target] = Date.now() + (time * 60000);
+                if (!target || !val) return addAiMessage("Uso: /mute nome minuti");
+                mutes[target] = Date.now() + (val * 60000);
                 localStorage.setItem('kyros_mutes', JSON.stringify(mutes));
-                addAiMessage(`${target} mutato per ${time} minuti.`);
+                addAiMessage(`${target} mutato.`);
                 break;
-
             case "/unmute":
-                if (!target) return addAiMessage("Uso: /unmute [nome]");
                 delete mutes[target];
                 localStorage.setItem('kyros_mutes', JSON.stringify(mutes));
                 addAiMessage(`${target} smutato.`);
                 break;
-
-            case "/accountlist":
-                addAiMessage(`<b>DATABASE STATUS:</b><br>
-                Bannati: ${blacklist.join(", ") || "Nessuno"}<br>
-                Mutati: ${Object.keys(mutes).join(", ") || "Nessuno"}`);
+            case "/help":
+                addAiMessage("<b>Comandi:</b> /ban, /unban, /mute, /unmute, /manutenzione, /accountlist");
                 break;
-
-            default:
-                addAiMessage("Protocollo non riconosciuto. Digita /help.");
+            case "/manutenzione":
+                isMaintenance = !isMaintenance;
+                localStorage.setItem('kyros_maintenance', isMaintenance);
+                initInterface();
+                addAiMessage("Manutenzione: " + isMaintenance);
+                break;
+            case "/accountlist":
+                addAiMessage(`BANNATI: ${blacklist.join(", ") || "Nessuno"} | MUTATI: ${Object.keys(mutes).join(", ")}`);
+                break;
         }
     }
 
-    function newChat() {
-        windowChat.innerHTML = `<div class="msg ai">Nuova sessione inizializzata.</div>`;
-    }
+    function addAiMessage(t) { windowChat.innerHTML += `<div class="msg ai">${t}</div>`; windowChat.scrollTop = windowChat.scrollHeight; }
+    function logout() { sessionStorage.clear(); location.reload(); }
 
     initInterface();
-    btn.onclick = askKyros;
-    input.onkeypress = (e) => { if (e.key === 'Enter') askKyros(); };
+    btn.onclick = handleAction;
+    input.onkeypress = (e) => { if (e.key === 'Enter') handleAction(); };
 </script>
 </body>
 </html>
