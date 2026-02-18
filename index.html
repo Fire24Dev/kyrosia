@@ -2,203 +2,225 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KyrosIA - Accesso</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KyrosIA - Portale d'Accesso</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --bg: #050810; 
+            --bg: #02040a; 
             --accent: #00f2ff; 
-            --accent-glow: rgba(0, 242, 255, 0.5);
-            --panel: rgba(15, 23, 42, 0.7); 
+            --accent-secondary: #7000ff;
+            --panel: rgba(10, 15, 25, 0.7); 
             --text-dim: #94a3b8;
         }
 
-        * { box-sizing: border-box; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        * { 
+            box-sizing: border-box; 
+            margin: 0; padding: 0;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); 
+        }
 
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
             background: var(--bg); 
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(0, 242, 255, 0.05) 0%, transparent 50%),
-                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
-            color: white; 
-            height: 100vh; display: flex; justify-content: center; align-items: center; margin: 0;
+            height: 100dvh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
             overflow: hidden;
+            color: white;
         }
 
-        /* Effetto di sfondo animato */
-        body::before {
-            content: ""; position: absolute; width: 200%; height: 200%;
-            background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
-            opacity: 0.1; z-index: -1; animation: move 60s linear infinite;
+        /* Sfondo con Mesh Gradient animato */
+        .bg-animate {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: 
+                radial-gradient(circle at 15% 15%, rgba(0, 242, 255, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(112, 0, 255, 0.1) 0%, transparent 40%);
+            filter: blur(80px);
         }
-
-        @keyframes move { from { transform: translate(0,0); } to { transform: translate(-50%, -50%); } }
 
         .login-card {
-            background: var(--panel); 
-            padding: 50px 40px; 
-            border-radius: 24px;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255,255,255,0.1);
-            width: 100%; max-width: 420px; text-align: center;
-            position: relative;
+            width: 90%; max-width: 400px;
+            padding: 40px;
+            background: var(--panel);
+            backdrop-filter: blur(30px);
+            border-radius: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+            text-align: center;
+            animation: cardEntrance 0.8s ease-out;
         }
 
-        /* Barra decorativa superiore */
-        .login-card::after {
-            content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-            width: 40%; height: 3px; background: var(--accent);
-            box-shadow: 0 0 15px var(--accent-glow); border-radius: 0 0 10px 10px;
+        @keyframes cardEntrance {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
+
+        .logo-area { margin-bottom: 35px; }
 
         h1 { 
-            font-weight: 800; font-size: 2rem; letter-spacing: 8px; 
-            background: linear-gradient(to right, #fff, var(--accent));
+            font-size: 2.2rem; font-weight: 800; letter-spacing: 6px; 
+            background: linear-gradient(135deg, #fff 30%, var(--accent));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            margin-bottom: 5px; text-transform: uppercase;
+            text-transform: uppercase;
         }
 
-        p.subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 30px; letter-spacing: 1px; }
+        .subtitle { 
+            color: var(--accent); font-size: 0.7rem; font-weight: 700; 
+            letter-spacing: 3px; margin-top: 5px; opacity: 0.8;
+        }
 
-        .input-wrapper { position: relative; margin: 15px 0; }
+        .form-group { margin-bottom: 18px; position: relative; }
 
         input {
-            width: 100%; padding: 14px 16px; border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); 
-            color: white; outline: none; font-size: 0.95rem;
+            width: 100%; padding: 16px 20px; border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.03);
+            color: white; outline: none; font-size: 1rem;
+            font-family: inherit;
         }
 
-        input:focus { 
-            border-color: var(--accent); 
-            background: rgba(0,0,0,0.4);
-            box-shadow: 0 0 0 4px rgba(0, 242, 255, 0.1);
+        input:focus {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.15);
         }
 
         button {
-            width: 100%; padding: 14px; margin-top: 25px; border-radius: 12px;
-            border: none; background: var(--accent); color: #020617; 
-            font-weight: 700; font-size: 1rem; cursor: pointer;
-            box-shadow: 0 10px 20px -5px var(--accent-glow);
+            width: 100%; padding: 16px; margin-top: 20px; border-radius: 16px;
+            border: none; font-weight: 800; font-size: 1rem; cursor: pointer;
+            background: white; color: black;
             text-transform: uppercase; letter-spacing: 1px;
+            position: relative; overflow: hidden;
         }
 
         button:hover { 
-            transform: translateY(-3px); 
-            box-shadow: 0 15px 25px -5px var(--accent-glow);
-            filter: brightness(1.1);
+            background: var(--accent); 
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(0, 242, 255, 0.3);
         }
 
-        button:active { transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
 
-        .toggle { 
-            margin-top: 25px; font-size: 0.85rem; cursor: pointer; 
-            color: var(--text-dim); transition: 0.2s;
+        .footer-links {
+            margin-top: 30px; font-size: 0.85rem; color: var(--text-dim);
         }
 
-        .toggle span { color: var(--accent); font-weight: 600; }
-        .toggle:hover { color: white; }
-
-        #error-msg { 
-            color: #ff4b4b; font-size: 0.8rem; margin-bottom: 15px; 
-            font-weight: 500; height: 1.2em; opacity: 0;
+        .footer-links span { 
+            color: white; font-weight: 600; cursor: pointer; text-decoration: underline;
+            text-underline-offset: 4px;
         }
-        
-        .show-error { opacity: 1 !important; animation: shake 0.4s ease; }
+
+        #error-box {
+            background: rgba(255, 75, 75, 0.1);
+            color: #ff4b4b;
+            padding: 10px; border-radius: 10px;
+            font-size: 0.8rem; margin-bottom: 20px;
+            display: none; border: 1px solid rgba(255, 75, 75, 0.2);
+            animation: shake 0.4s ease;
+        }
 
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+
+        /* Ottimizzazione Mobile */
+        @media (max-width: 480px) {
+            .login-card { padding: 30px 20px; border-radius: 24px; }
+            h1 { font-size: 1.8rem; }
         }
     </style>
 </head>
 <body>
 
+    <div class="bg-animate"></div>
+
     <div class="login-card">
-        <h1>KYROS IA</h1>
-        <p class="subtitle" id="subtitle-text">IDENTIFICATION REQUIRED</p>
-        
-        <div id="error-msg"></div>
-
-        <div class="input-wrapper">
-            <input type="text" id="username" placeholder="Nome Utente" spellcheck="false">
-        </div>
-        <div class="input-wrapper">
-            <input type="password" id="password" placeholder="Password">
+        <div class="logo-area">
+            <h1>KYROS</h1>
+            <div class="subtitle" id="status-tag">SECURITY PROTOCOL</div>
         </div>
 
-        <button onclick="handleAction()" id="main-btn">Inizializza Accesso</button>
-        
-        <div class="toggle" onclick="toggleForm()" id="toggle-text">
-            Richiesta autorizzazione? <span>Registrati</span>
+        <div id="error-box"></div>
+
+        <div class="form-group">
+            <input type="text" id="username" placeholder="Username" autocomplete="off">
+        </div>
+        <div class="form-group">
+            <input type="password" id="password" placeholder="Access Key">
+        </div>
+
+        <button onclick="handleAction()" id="action-btn">Initialize</button>
+
+        <div class="footer-links" id="toggle-container">
+            New unit? <span onclick="toggleMode()">Register Identity</span>
         </div>
     </div>
 
     <script>
         let isLogin = true;
-
-        // Credenziali del Proprietario incluse nella logica
         const OWNER = { user: "firethesuper", pass: "Auromat1730!" };
 
-        function toggleForm() {
+        function toggleMode() {
             isLogin = !isLogin;
-            const title = document.getElementById('subtitle-text');
-            const btn = document.getElementById('main-btn');
-            const toggle = document.getElementById('toggle-text');
-            const error = document.getElementById('error-msg');
+            const btn = document.getElementById('action-btn');
+            const tag = document.getElementById('status-tag');
+            const footer = document.getElementById('toggle-container');
+            const errorBox = document.getElementById('error-box');
 
-            title.innerText = isLogin ? "IDENTIFICATION REQUIRED" : "CREATE NEW IDENTITY";
-            btn.innerText = isLogin ? "Inizializza Accesso" : "Crea Profilo";
-            toggle.innerHTML = isLogin ? "Richiesta autorizzazione? <span>Registrati</span>" : "Hai già le credenziali? <span>Accedi</span>";
-            error.classList.remove('show-error');
+            errorBox.style.display = "none";
+            tag.innerText = isLogin ? "SECURITY PROTOCOL" : "NEW REGISTRATION";
+            btn.innerText = isLogin ? "Initialize" : "Create Core";
+            footer.innerHTML = isLogin ? 
+                'New unit? <span onclick="toggleMode()">Register Identity</span>' : 
+                'Access ready? <span onclick="toggleMode()">Login Now</span>';
         }
 
         function handleAction() {
             const user = document.getElementById('username').value.trim();
             const pass = document.getElementById('password').value.trim();
-            const error = document.getElementById('error-msg');
+            const errorBox = document.getElementById('error-box');
 
             if (!user || !pass) {
-                showError("Inserire dati di autenticazione");
+                showError("Identity data required.");
                 return;
             }
 
             let users = JSON.parse(localStorage.getItem('kyros_users')) || {};
 
             if (isLogin) {
-                // Controllo se sei TU (il Proprietario) o un utente registrato
                 if ((user === OWNER.user && pass === OWNER.pass) || (users[user] && users[user] === pass)) {
-                    
-                    // Salva il ruolo in sessione
                     const role = (user === OWNER.user) ? "Owner" : "User";
                     sessionStorage.setItem('kyros_session', user);
                     sessionStorage.setItem('kyros_role', role);
-
-                    alert(`Accesso autorizzato. Benvenuto ${role}: ${user}`);
-                    window.location.href = "loading.html";
+                    
+                    // Effetto feedback prima di cambiare pagina
+                    document.getElementById('action-btn').innerText = "Authorized...";
+                    document.getElementById('action-btn').style.background = "#00f2ff";
+                    
+                    setTimeout(() => { window.location.href = "chat.html"; }, 800);
                 } else {
-                    showError("Accesso negato: credenziali errate");
+                    showError("Invalid credentials. Access denied.");
                 }
             } else {
                 if (users[user] || user === OWNER.user) {
-                    showError("Identità già presente nel database");
+                    showError("Identity already exists in core.");
                 } else {
                     users[user] = pass;
                     localStorage.setItem('kyros_users', JSON.stringify(users));
-                    alert("Identità creata. Procedere con l'accesso.");
-                    toggleForm();
+                    alert("Profile encrypted. You can login now.");
+                    toggleMode();
                 }
             }
         }
 
         function showError(msg) {
-            const error = document.getElementById('error-msg');
-            error.innerText = msg;
-            error.classList.add('show-error');
-            setTimeout(() => error.classList.remove('show-error'), 3000);
+            const box = document.getElementById('error-box');
+            box.innerText = msg;
+            box.style.display = "block";
         }
     </script>
 </body>
