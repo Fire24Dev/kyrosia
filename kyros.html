@@ -85,12 +85,12 @@
 </header>
 
 <div id="chat-window">
-    <div class="msg ai">Ciao sono KyrosIA! Come posso aiutarti?</div>
+    <div class="msg ai">Ciao! Sono KyrosIA. In cosa posso aiutarti oggi?</div>
 </div>
 
 <div class="input-wrapper">
     <div class="input-container">
-        <input type="text" id="userInput" placeholder="Invia un messaggio o un comando..." autocomplete="off">
+        <input type="text" id="userInput" placeholder="Invia un messaggio..." autocomplete="off">
         <button class="icon-btn" id="sendBtn">🚀</button>
     </div>
 </div>
@@ -105,22 +105,13 @@
     const windowChat = document.getElementById('chat-window');
     const statusLabel = document.getElementById('system-status');
 
-    // GESTIONE RUOLI
     const currentRole = sessionStorage.getItem('kyros_role') || "User";
-    let admins = JSON.parse(localStorage.getItem('kyros_admins')) || [];
     let isMaintenance = localStorage.getItem('kyros_maintenance') === 'true';
-
-    function isPrivileged() {
-        return currentRole === "Owner" || admins.includes(currentRole);
-    }
 
     function initInterface() {
         if (currentRole === "Owner") {
             statusLabel.innerText = "OWNER: firethesuper";
             statusLabel.style.color = "var(--owner-color)";
-        } else if (admins.includes(currentRole)) {
-            statusLabel.innerText = "ADMIN: " + currentRole;
-            statusLabel.style.color = "var(--accent)";
         } else if (isMaintenance) {
             statusLabel.innerText = "MANUTENZIONE";
             statusLabel.style.color = "var(--danger)";
@@ -140,12 +131,16 @@
         windowChat.scrollTop = windowChat.scrollHeight;
 
         if (text.startsWith("/")) {
-            handleCommands(text.toLowerCase());
+            if (currentRole === "Owner") {
+                handleCommands(text);
+            } else {
+                addAiMessage("Accesso negato ai comandi di sistema.");
+            }
             return;
         }
 
-        if (isMaintenance && !isPrivileged()) {
-            addAiMessage("Il sistema è attualmente in manutenzione. Solo gli amministratori possono accedere.");
+        if (isMaintenance && currentRole !== "Owner") {
+            addAiMessage("Il sistema è attualmente in manutenzione.");
             return;
         }
 
@@ -163,7 +158,7 @@
                 body: JSON.stringify({
                     model: "llama-3.3-70b-versatile",
                     messages: [
-                        { role: "system", content: "Sei KyrosIA. Assistente avanzato creato da firethesuper. Rispondi in italiano." },
+                        { role: "system", content: "Sei KyrosIA, creato da firethesuper. Rispondi in modo intelligente in italiano." },
                         { role: "user", content: text }
                     ]
                 })
@@ -183,67 +178,18 @@
     }
 
     function handleCommands(text) {
-        const args = text.split(" ");
-        const cmd = args[0];
-        const val = args[1];
-
-        // --- COMANDO HELP (Per tutti) ---
-        if (cmd === "/help") {
-            let helpMsg = "<b>Comandi disponibili:</b><br>";
-            helpMsg += "• /help - Mostra questa lista<br>";
-            if (isPrivileged()) {
-                helpMsg += "• /manutenzione - Attiva/Disattiva blocco<br>";
-                helpMsg += "• /accountlist - Mostra Admin e Owner<br>";
-                helpMsg += "• /addadmin [nome] - Aggiunge un admin<br>";
-            }
-            if (currentRole === "Owner") {
-                helpMsg += "• /removeadmin [nome] - Rimuove un admin<br>";
-            }
-            addAiMessage(helpMsg);
-            return;
-        }
-
-        // --- COMANDI PRIVILEGIATI ---
-        if (!isPrivileged()) {
-            addAiMessage("Accesso negato. Permessi admin richiesti.");
-            return;
-        }
-
-        switch(cmd) {
-            case "/manutenzione":
-                isMaintenance = !isMaintenance;
-                localStorage.setItem('kyros_maintenance', isMaintenance);
-                addAiMessage(`Stato Manutenzione: ${isMaintenance ? 'ATTIVO' : 'DISATTIVATO'}`);
-                initInterface();
-                break;
-                
-            case "/accountlist":
-                addAiMessage(`<b>Owner:</b> firethesuper<br><b>Admin:</b> ${admins.length > 0 ? admins.join(", ") : "Nessuno"}`);
-                break;
-
-            case "/addadmin":
-                if (!val) return addAiMessage("Specifica un nome utente: /addadmin nome");
-                if (admins.includes(val)) return addAiMessage(`${val} è già admin.`);
-                admins.push(val);
-                localStorage.setItem('kyros_admins', JSON.stringify(admins));
-                addAiMessage(`Unità ${val} promossa ad Amministratore.`);
-                break;
-
-            case "/removeadmin":
-                if (currentRole !== "Owner") return addAiMessage("Solo l'Owner può rimuovere amministratori.");
-                if (!val) return addAiMessage("Specifica un nome utente: /removeadmin nome");
-                admins = admins.filter(a => a !== val);
-                localStorage.setItem('kyros_admins', JSON.stringify(admins));
-                addAiMessage(`Unità ${val} declassata a Utente.`);
-                break;
-
-            default:
-                addAiMessage("Comando non riconosciuto. Digita /help.");
+        if (text === "/manutenzione") {
+            isMaintenance = !isMaintenance;
+            localStorage.setItem('kyros_maintenance', isMaintenance);
+            addAiMessage(`Stato Manutenzione: ${isMaintenance ? 'ATTIVO' : 'DISATTIVATO'}`);
+            initInterface();
+        } else if (text === "/accountlist") {
+            addAiMessage("Database Unità: firethesuper (Owner)");
         }
     }
 
     function newChat() {
-        windowChat.innerHTML = `<div class="msg ai">Nuova sessione avviata. Nucleo Kyros pronto.</div>`;
+        windowChat.innerHTML = `<div class="msg ai">Nuova sessione avviata.</div>`;
     }
 
     initInterface();
