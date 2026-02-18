@@ -73,7 +73,7 @@
         if (userRole === "Owner") {
             statusLabel.innerText = "OWNER: " + currentNick;
             statusLabel.style.color = "var(--owner-color)";
-            addMsg("ai", `Sistemi sbloccati. Benvenuto, <b>Owner</b>.`);
+            addMsg("ai", `Benvenuto, <b>Fire</b>, Ho sbloccato tutti i sistemi per te.`);
         } else {
             statusLabel.innerText = "UTENTE: " + currentNick;
             addMsg("ai", `Identità confermata. In attesa di input.`);
@@ -85,7 +85,7 @@
         if (!text) return;
 
         if (blacklist.includes(currentNick) && userRole !== "Owner") {
-            addMsg("ai", "<b>ACCESSO NEGATO:</b> Sei bannato.");
+            addMsg("ai", "<b>ERRORE:</b> Sei bannato.");
             return;
         }
 
@@ -140,7 +140,7 @@
             case "/unban":
                 blacklist = blacklist.filter(u => u !== target);
                 localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
-                addMsg("ai", `Utente <b>${target}</b> riabilitato.`);
+                addMsg("ai", `Utente <b>${target}</b> unbannato.`);
                 break;
             case "/manutenzione":
                 isMaintenance = !isMaintenance;
