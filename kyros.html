@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KyrosIA - Evolution</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
             --bg: #050810;
@@ -23,12 +24,20 @@
         .status { font-size: 0.7rem; font-weight: 800; color: var(--accent); letter-spacing: 1px; flex: 1; }
 
         #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
-        .msg { max-width: 85%; padding: 12px 16px; border-radius: 20px; font-size: 0.95rem; line-height: 1.4; animation: emerge 0.3s ease; word-wrap: break-word; }
+        
+        /* Messaggi */
+        .msg { max-width: 85%; padding: 12px 16px; border-radius: 20px; font-size: 0.95rem; line-height: 1.4; animation: emerge 0.3s ease; word-wrap: break-word; position: relative; }
         .msg b { font-weight: 800; }
 
         .user { align-self: flex-end; background: linear-gradient(135deg, #00d2ff, #3a86ff); color: white; border-bottom-right-radius: 4px; }
         .user.owner-msg { background: linear-gradient(135deg, var(--owner-color), #ff4b2b); box-shadow: 0 5px 15px rgba(255, 0, 119, 0.3); }
-        .ai { align-self: flex-start; background: var(--panel); border: 1px solid var(--glass-border); border-bottom-left-radius: 4px; }
+        .ai { align-self: flex-start; background: var(--panel); border: 1px solid var(--glass-border); border-bottom-left-radius: 4px; padding-bottom: 35px; }
+
+        /* Azioni Messaggio (Copia/Audio) */
+        .msg-actions { position: absolute; bottom: 5px; right: 10px; display: flex; gap: 8px; opacity: 0.6; transition: 0.3s; }
+        .ai:hover .msg-actions { opacity: 1; }
+        .action-btn { background: none; border: none; color: white; cursor: pointer; font-size: 0.8rem; padding: 4px; border-radius: 5px; transition: 0.2s; }
+        .action-btn:hover { background: rgba(255,255,255,0.1); color: var(--accent); }
 
         .input-area { padding: 20px; background: var(--bg); display: flex; gap: 10px; border-top: 1px solid var(--glass-border); }
         input { flex: 1; padding: 15px; border-radius: 15px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; outline: none; font-size: 1rem; }
@@ -41,7 +50,6 @@
         #assist-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         .assist-content { max-width: 600px; margin: 40px auto; background: var(--panel); border: 1px solid var(--glass-border); border-radius: 20px; padding: 25px; }
         .req-card { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-        .req-actions { display: flex; gap: 10px; margin-top: 10px; }
         .status-badge { font-size: 0.6rem; padding: 3px 8px; border-radius: 5px; text-transform: uppercase; margin-left: 10px; }
 
         @keyframes emerge { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -89,15 +97,38 @@
     if (!currentNick) { window.location.href = "index.html"; }
 
     function init() {
+        updateStatus();
         if (userRole === "Owner") {
-            statusLabel.innerText = "OWNER: " + currentNick;
-            statusLabel.style.color = "var(--owner-color)";
-            addMsg("ai", `Benvenuto <b>Fire</b>, sistemi pronti.`);
+            addMsg("ai", `Benvenuto <b>Fire</b>, sistemi pronti. Tutti i comandi sbloccati.`);
         } else {
-            statusLabel.innerText = "UTENTE: " + currentNick;
-            addMsg("ai", `Ciao <b>${currentNick}</b>! Come posso aiutarti?`);
+            addMsg("ai", `Ciao <b>${currentNick}</b>! Sono KyrosIA, come posso aiutarti oggi?`);
         }
-        if(isMaintenance) statusLabel.innerText += " (MANUTENZIONE)";
+    }
+
+    function updateStatus() {
+        let text = userRole === "Owner" ? "OWNER: " : "UTENTE: ";
+        text += currentNick;
+        if(isMaintenance) text += " [OFFLINE]";
+        statusLabel.innerText = text;
+        if(userRole === "Owner") statusLabel.style.color = "var(--owner-color)";
+    }
+
+    // --- FUNZIONI EXTRA (Copia & Audio) ---
+    function copyText(btn, textId) {
+        const text = document.getElementById(textId).innerText.replace("...", "");
+        navigator.clipboard.writeText(text);
+        const icon = btn.querySelector('i');
+        icon.className = "fas fa-check";
+        setTimeout(() => icon.className = "fas fa-copy", 2000);
+    }
+
+    function speakText(textId) {
+        const text = document.getElementById(textId).innerText.replace("...", "");
+        window.speechSynthesis.cancel(); // Ferma letture precedenti
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'it-IT';
+        utterance.rate = 1.1;
+        window.speechSynthesis.speak(utterance);
     }
 
     // --- LOGICA ASSISTENZA ---
@@ -110,77 +141,52 @@
     function renderAssist() {
         const body = document.getElementById('assist-body');
         body.innerHTML = "";
-
         if (userRole === "Owner") {
-            document.getElementById('assist-title').innerText = "Pannello Richieste (Admin)";
-            if (assistRequests.length === 0) body.innerHTML = "<p>Nessuna richiesta pendente.</p>";
+            document.getElementById('assist-title').innerText = "Richieste Pendenti";
             assistRequests.forEach((req, index) => {
                 body.innerHTML += `
                     <div class="req-card">
-                        <p><b>Utente:</b> ${req.user} <span class="status-badge" style="background:${getStatusColor(req.status)}">${req.status}</span></p>
-                        <p><b>Messaggio:</b> ${req.text}</p>
+                        <p><b>Da:</b> ${req.user} <span class="status-badge" style="background:${getStatusColor(req.status)}">${req.status}</span></p>
+                        <p>${req.text}</p>
                         ${req.status === 'pendente' ? `
-                            <div class="req-actions">
-                                <button onclick="actionReq(${index}, 'risolto')" class="btn-ui" style="background:var(--success)">RISOLTO</button>
-                                <button onclick="actionReq(${index}, 'rifiutato')" class="btn-ui" style="background:var(--danger)">RIFIUTA</button>
-                            </div>
-                        ` : `<p><small>Nota Owner: ${req.note || "Nessuna"}</small></p>`}
+                            <button onclick="actionReq(${index}, 'risolto')" class="btn-ui" style="background:var(--success)">RISOLTO</button>
+                            <button onclick="actionReq(${index}, 'rifiutato')" class="btn-ui" style="background:var(--danger)">RIFIUTA</button>
+                        ` : `<p><small>Nota: ${req.note}</small></p>`}
                     </div>`;
             });
         } else {
-            document.getElementById('assist-title').innerText = "La tua Assistenza";
-            body.innerHTML = `
-                <div class="req-card">
-                    <p><b>Nuova Richiesta per ${currentNick}:</b></p>
-                    <textarea id="assistText" placeholder="Descrivi il tuo problema..." style="width:100%; height:80px; background:rgba(0,0,0,0.2); color:white; border:1px solid var(--glass-border); border-radius:10px; padding:10px; box-sizing:border-box;"></textarea>
-                    <button onclick="sendAssist()" class="btn-ui btn-accent" style="width:100%; margin-top:10px;">INVIA RICHIESTA</button>
-                </div>
-                <hr style="border:0; border-top:1px solid var(--glass-border); margin:20px 0;">
-                <p><b>Storico Richieste:</b></p>
-            `;
-            const myReqs = assistRequests.filter(r => r.user === currentNick);
-            myReqs.reverse().forEach(req => {
-                body.innerHTML += `
-                    <div class="req-card">
-                        <span class="status-badge" style="background:${getStatusColor(req.status)}">${req.status}</span>
-                        <p style="margin-top:10px;">${req.text}</p>
-                        ${req.note ? `<p style="font-size:0.8rem; color:var(--accent)">Nota: ${req.note}</p>` : ""}
-                    </div>`;
+            body.innerHTML = `<textarea id="assistText" placeholder="Di cosa hai bisogno?" style="width:100%; height:80px; background:rgba(0,0,0,0.2); color:white; border:1px solid var(--glass-border); border-radius:10px; padding:10px;"></textarea>
+            <button onclick="sendAssist()" class="btn-ui btn-accent" style="width:100%; margin-top:10px;">INVIA</button><hr style="margin:20px 0; border:0; border-top:1px solid var(--glass-border)">`;
+            assistRequests.filter(r => r.user === currentNick).reverse().forEach(req => {
+                body.innerHTML += `<div class="req-card"><span class="status-badge" style="background:${getStatusColor(req.status)}">${req.status}</span><p>${req.text}</p>${req.note ? `<p style="color:var(--accent)">Nota: ${req.note}</p>` : ""}</div>`;
             });
         }
     }
 
     function sendAssist() {
-        const text = document.getElementById('assistText').value.trim();
-        if (!text) return alert("Inserisci un motivo.");
-        assistRequests.push({ user: currentNick, text: text, status: 'pendente', note: '' });
-        saveAssist();
+        const t = document.getElementById('assistText').value;
+        if(!t) return;
+        assistRequests.push({user: currentNick, text: t, status: 'pendente', note: ''});
+        localStorage.setItem('kyros_assist', JSON.stringify(assistRequests));
         renderAssist();
     }
 
-    function actionReq(index, status) {
-        const note = prompt("Aggiungi un commento/informazione per l'utente:");
-        assistRequests[index].status = status;
-        assistRequests[index].note = note || "";
-        saveAssist();
+    function actionReq(i, s) {
+        const n = prompt("Messaggio per l'utente:");
+        assistRequests[i].status = s;
+        assistRequests[i].note = n || "";
+        localStorage.setItem('kyros_assist', JSON.stringify(assistRequests));
         renderAssist();
     }
 
-    function getStatusColor(s) {
-        if(s === 'risolto') return 'var(--success)';
-        if(s === 'rifiutato') return 'var(--danger)';
-        return 'var(--accent)';
-    }
+    function getStatusColor(s) { return s === 'risolto' ? 'var(--success)' : s === 'rifiutato' ? 'var(--danger)' : 'var(--accent)'; }
 
-    function saveAssist() { localStorage.setItem('kyros_assist', JSON.stringify(assistRequests)); }
-
-    // --- LOGICA CHAT ---
+    // --- LOGICA CHAT & COMANDI ---
     async function handleSend() {
         const text = input.value.trim();
         if (!text) return;
-        
         if (blacklist.includes(currentNick) && userRole !== "Owner") {
-            addMsg("ai", "<b>ERRORE:</b> Sei bannato.");
+            addMsg("ai", "<b>ACCESSO NEGATO:</b> Il tuo account � nella blacklist.");
             return;
         }
 
@@ -189,17 +195,17 @@
 
         if (text.startsWith("/")) {
             if (userRole === "Owner") handleCommands(text);
-            else addMsg("ai", "<b>ERRORE:</b> Solo l'Owner ha accesso ai comandi.");
+            else addMsg("ai", "<b>ERRORE:</b> Comandi riservati all'Owner.");
             return;
         }
 
         if (isMaintenance && userRole !== "Owner") {
-            addMsg("ai", "<b>OFFLINE:</b> Manutenzione in corso. Riprova pi� tardi.");
+            addMsg("ai", "<b>MANUTENZIONE:</b> KyrosIA � momentaneamente offline.");
             return;
         }
 
-        const tempId = "ai-" + Date.now();
-        addMsg("ai", "...", tempId);
+        const tid = "msg-" + Date.now();
+        addMsg("ai", "...", tid);
 
         try {
             const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -207,57 +213,58 @@
                 headers: { "Authorization": `Bearer ${_vault()}`, "Content-Type": "application/json" },
                 body: JSON.stringify({
                     model: "llama-3.3-70b-versatile",
-                    messages: [
-                        {role: "system", content: "Sei KyrosIA, creato da firethesuper. Rispondi in modo tecnico e audace."},
-                        {role: "user", content: text}
-                    ]
+                    messages: [{role: "system", content: "Sei KyrosIA, creato da firethesuper. Rispondi in modo audace e tecnico."}, {role: "user", content: text}]
                 })
             });
             const data = await resp.json();
-            document.getElementById(tempId).innerHTML = data.choices[0].message.content;
+            document.getElementById(tid).innerHTML = data.choices[0].message.content;
         } catch (e) {
-            document.getElementById(tempId).innerText = "Errore di connessione.";
+            document.getElementById(tid).innerText = "Errore critico di rete.";
         }
     }
 
-    function handleCommands(text) {
-        const p = text.split(" ");
+    function handleCommands(t) {
+        const p = t.split(" ");
         const cmd = p[0].toLowerCase();
-        const target = p[1];
+        const arg = p[1];
 
-        switch(cmd) {
-            case "/ban":
-                if(!target) return addMsg("ai", "Specifica un utente.");
-                blacklist.push(target);
-                localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
-                addMsg("ai", `Utente <b>${target}</b> bannato.`);
-                break;
-            case "/unban":
-                blacklist = blacklist.filter(u => u !== target);
-                localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
-                addMsg("ai", `Utente <b>${target}</b> unbannato.`);
-                break;
-            case "/manutenzione":
-                isMaintenance = !isMaintenance;
-                localStorage.setItem('kyros_maintenance', isMaintenance);
-                statusLabel.innerText = isMaintenance ? `OWNER: ${currentNick} (MANUTENZIONE)` : `OWNER: ${currentNick}`;
-                addMsg("ai", `Manutenzione impostata su: <b>${isMaintenance ? "ATTIVA" : "DISATTIVA"}</b>`);
-                break;
-            case "/accountlist":
-                addMsg("ai", `<b>Blacklist:</b> ${blacklist.join(", ") || "Vuota"}`);
-                break;
-            case "/help":
-                addMsg("ai", "<b>Comandi Admin:</b> /ban, /unban, /manutenzione, /accountlist");
-                break;
-            default: addMsg("ai", "Comando non riconosciuto.");
+        if(cmd === "/ban") {
+            blacklist.push(arg);
+            localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
+            addMsg("ai", `Utente <b>${arg}</b> bannato.`);
+        } else if(cmd === "/unban") {
+            blacklist = blacklist.filter(u => u !== arg);
+            localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
+            addMsg("ai", `Utente <b>${arg}</b> rimosso dalla blacklist.`);
+        } else if(cmd === "/manutenzione") {
+            isMaintenance = !isMaintenance;
+            localStorage.setItem('kyros_maintenance', isMaintenance);
+            updateStatus();
+            addMsg("ai", `Manutenzione: <b>${isMaintenance ? "ON" : "OFF"}</b>`);
+        } else if(cmd === "/accountlist") {
+            addMsg("ai", `<b>Blacklist:</b> ${blacklist.join(", ") || "Nessuno"}`);
+        } else if(cmd === "/help") {
+            addMsg("ai", "<b>Comandi Admin:</b><br>/ban [nome]<br>/unban [nome]<br>/manutenzione<br>/accountlist");
+        } else {
+            addMsg("ai", "Comando non riconosciuto.");
         }
     }
 
     function addMsg(type, text, id = "") {
         const div = document.createElement('div');
+        const uniqueId = id || "txt-" + Math.random().toString(36).substr(2, 9);
         div.className = `msg ${type} ${ (type === 'user' && userRole === 'Owner') ? 'owner-msg' : '' }`;
-        if(id) div.id = id;
-        div.innerHTML = text; 
+        
+        div.innerHTML = `<span id="${uniqueId}">${text}</span>`;
+        
+        if(type === 'ai') {
+            div.innerHTML += `
+                <div class="msg-actions">
+                    <button class="action-btn" onclick="copyText(this, '${uniqueId}')" title="Copia"><i class="fas fa-copy"></i></button>
+                    <button class="action-btn" onclick="speakText('${uniqueId}')" title="Ascolta"><i class="fas fa-volume-up"></i></button>
+                </div>`;
+        }
+        
         chatWin.appendChild(div);
         chatWin.scrollTop = chatWin.scrollHeight;
     }
