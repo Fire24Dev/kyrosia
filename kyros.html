@@ -121,7 +121,7 @@
 </header>
 
 <div id="chat-window">
-    <div class="msg ai">Bentornato. Sono KyrosIA. Come posso aiutarti oggi?</div>
+    <div class="msg ai" id="welcome-msg">Bentornato. Sono KyrosIA. Come posso aiutarti oggi?</div>
 </div>
 
 <div class="input-container">
@@ -138,9 +138,16 @@
     const currentUser = sessionStorage.getItem('kyros_session') || "Ospite";
     const currentRole = sessionStorage.getItem('kyros_role') || "User";
 
+    // Controllo Stato Manutenzione all'avvio
+    let isMaintenance = localStorage.getItem('kyros_maintenance') === 'true';
+
     if (currentRole === "Owner") {
         statusLabel.innerText = "CONTROLLO PROPRIETARIO: firethesuper";
         statusLabel.style.color = "var(--owner-color)";
+    } else if (isMaintenance) {
+        statusLabel.innerText = "MODALIT� MANUTENZIONE";
+        statusLabel.style.color = "#ff4444";
+        document.getElementById('welcome-msg').innerText = "KyrosIA � in manutenzione.";
     }
 
     async function askKyros() {
@@ -155,13 +162,25 @@
         // --- COMANDI OWNER ---
         if (text.startsWith("/")) {
             if (currentRole !== "Owner") {
-                windowChat.innerHTML += `<div class="msg ai">Accesso negato. Solo il proprietario può usare i comandi di sistema.</div>`;
+                windowChat.innerHTML += `<div class="msg ai">Accesso negato. Solo firethesuper pu� usare i comandi.</div>`;
                 return;
             }
+
+            // COMANDO /manutenzione
+            if (text.toLowerCase() === "/manutenzione") {
+                isMaintenance = !isMaintenance;
+                localStorage.setItem('kyros_maintenance', isMaintenance);
+                const status = isMaintenance ? "ATTIVATA" : "DISATTIVATA";
+                windowChat.innerHTML += `<div class="msg ai" style="border-left: 3px solid var(--owner-color);"> Manutenzione ${status}.</div>`;
+                statusLabel.innerText = isMaintenance ? "MODALIT� MANUTENZIONE" : "CONTROLLO PROPRIETARIO: firethesuper";
+                statusLabel.style.color = isMaintenance ? "#ff4444" : "var(--owner-color)";
+                return;
+            }
+
             if (text.toLowerCase() === "/accountlist") {
                 let users = JSON.parse(localStorage.getItem('kyros_users')) || {};
                 let list = "<b>Lista Utenti:</b><br>";
-                for (let u in users) list += `👤 ${u} (Pass: ${users[u]})<br>`;
+                for (let u in users) list += ` ${u} (Pass: ${users[u]})<br>`;
                 windowChat.innerHTML += `<div class="msg ai">${list}</div>`;
             } else if (text.startsWith("/ban ")) {
                 const target = text.replace("/ban ", "").trim();
@@ -169,11 +188,18 @@
                 if (users[target]) {
                     delete users[target];
                     localStorage.setItem('kyros_users', JSON.stringify(users));
-                    windowChat.innerHTML += `<div class="msg ai">Utente <b>${target}</b> eliminato dal sistema.</div>`;
+                    windowChat.innerHTML += `<div class="msg ai">Utente <b>${target}</b> eliminato.</div>`;
                 } else {
                     windowChat.innerHTML += `<div class="msg ai">Utente non trovato.</div>`;
                 }
             }
+            windowChat.scrollTop = windowChat.scrollHeight;
+            return;
+        }
+
+        // --- BLOCCO MANUTENZIONE PER UTENTI ---
+        if (isMaintenance && currentRole !== "Owner") {
+            windowChat.innerHTML += `<div class="msg ai">KyrosIA � in manutenzione.</div>`;
             windowChat.scrollTop = windowChat.scrollHeight;
             return;
         }
@@ -184,16 +210,15 @@
         windowChat.scrollTop = windowChat.scrollHeight;
 
         try {
-            // Prompt migliorato per parlare in modo naturale
-            let prompt = "Sei KyrosIA, un'intelligenza artificiale avanzata, amichevole ma professionale. Parla in italiano in modo fluido e naturale. ";
+            let prompt = "Sei KyrosIA, amichevole e professionale. ";
             if (currentRole === "Owner") {
-                prompt += "Stai parlando con il tuo creatore, firethesuper. Sii collaborativa al massimo. ";
+                prompt += "Parli con firethesuper, il tuo creatore. ";
             }
             
-            const response = await puter.ai.chat(prompt + "L'utente dice: " + text);
+            const response = await puter.ai.chat(prompt + text);
             document.getElementById(loadId).innerText = response.toString();
         } catch (e) {
-            document.getElementById(loadId).innerText = "C'è stato un piccolo errore di connessione. Riprova!";
+            document.getElementById(loadId).innerText = "Errore di connessione.";
         }
         windowChat.scrollTop = windowChat.scrollHeight;
     }
