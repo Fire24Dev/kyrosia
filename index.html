@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KyrosIA - Portale d'Accesso</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         :root { 
             --bg: #02040a; 
             --accent: #00f2ff; 
-            --accent-secondary: #7000ff;
             --panel: rgba(10, 15, 25, 0.7); 
             --text-dim: #94a3b8;
         }
@@ -25,9 +25,8 @@
 
         .bg-animate {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            background: 
-                radial-gradient(circle at 15% 15%, rgba(0, 242, 255, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 85% 85%, rgba(112, 0, 255, 0.1) 0%, transparent 40%);
+            background: radial-gradient(circle at 15% 15%, rgba(0, 242, 255, 0.08) 0%, transparent 40%),
+                        radial-gradient(circle at 85% 85%, rgba(112, 0, 255, 0.1) 0%, transparent 40%);
             filter: blur(80px);
         }
 
@@ -63,93 +62,150 @@
         }
         button:hover { background: var(--accent); transform: translateY(-2px); }
 
-        .footer-links { margin-top: 30px; font-size: 0.85rem; color: var(--text-dim); }
-        .footer-links span { color: white; font-weight: 600; cursor: pointer; text-decoration: underline; }
+        /* Overlay Codice */
+        #verify-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); backdrop-filter: blur(15px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+        }
+
+        .verify-card {
+            background: #0a1120; padding: 40px; border-radius: 32px; border: 1px solid rgba(0, 242, 255, 0.3);
+            text-align: center; max-width: 350px; width: 85%;
+            box-shadow: 0 0 50px rgba(0, 242, 255, 0.1);
+        }
 
         #error-box {
             background: rgba(255, 75, 75, 0.1); color: #ff4b4b;
-            padding: 10px; border-radius: 10px; font-size: 0.8rem;
+            padding: 12px; border-radius: 12px; font-size: 0.85rem;
             margin-bottom: 20px; display: none; border: 1px solid rgba(255, 75, 75, 0.2);
         }
+
+        .footer-links { margin-top: 30px; font-size: 0.85rem; color: var(--text-dim); }
+        .footer-links span { color: white; font-weight: 600; cursor: pointer; text-decoration: underline; }
     </style>
 </head>
 <body>
     <div class="bg-animate"></div>
+
     <div class="login-card">
         <div class="logo-area">
             <h1>KYROS IA</h1>
             <div class="subtitle" id="status-tag">SECURITY PROTOCOL</div>
         </div>
         <div id="error-box"></div>
-        <div class="form-group"><input type="text" id="username" placeholder="Nome" autocomplete="off"></div>
-        <div class="form-group"><input type="password" id="password" placeholder="Password"></div>
+        
+        <div class="form-group"><input type="text" id="username" placeholder="Identificativo" autocomplete="off"></div>
+        <div class="form-group" id="email-group" style="display:none;"><input type="email" id="email" placeholder="Indirizzo Email"></div>
+        <div class="form-group"><input type="password" id="password" placeholder="Access Key"></div>
+        
         <button onclick="handleAction()" id="action-btn">Accedi</button>
+        
         <div class="footer-links" id="toggle-container">
             Nuova unità? <span onclick="toggleMode()">Registrati</span>
         </div>
     </div>
 
+    <div id="verify-overlay">
+        <div class="verify-card">
+            <h2 style="margin-bottom: 10px; color: #fff;">Verifica Nucleo</h2>
+            <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 25px;">Inserisci il codice trasmesso alla tua email per finalizzare l'identità.</p>
+            <input type="text" id="verify-code-input" placeholder="------" maxlength="6" style="text-align: center; font-size: 1.5rem; letter-spacing: 8px; margin-bottom: 20px; border-color: var(--accent);">
+            <button onclick="confirmRegistration()" style="background: var(--accent);">Verifica Codice</button>
+            <p onclick="location.reload()" style="margin-top: 20px; font-size: 0.75rem; cursor: pointer; opacity: 0.6;">Annulla</p>
+        </div>
+    </div>
+
     <script>
+        // Inizializzazione con le tue chiavi
+        (function(){
+            emailjs.init("TayTydvJKxPtEyu-W"); 
+        })();
+
         let isLogin = true;
+        let generatedCode = null;
+        let pendingUser = {};
+
         const OWNER = { user: "firethesuper", pass: "Auromat1730!" };
 
         function toggleMode() {
             isLogin = !isLogin;
-            const btn = document.getElementById('action-btn');
-            const tag = document.getElementById('status-tag');
-            const footer = document.getElementById('toggle-container');
-            const errorBox = document.getElementById('error-box');
-
-            errorBox.style.display = "none";
-            tag.innerText = isLogin ? "SECURITY PROTOCOL" : "NEW REGISTRATION";
-            btn.innerText = isLogin ? "Accedi" : "Crea Account";
-            footer.innerHTML = isLogin ? 
+            document.getElementById('email-group').style.display = isLogin ? 'none' : 'block';
+            document.getElementById('status-tag').innerText = isLogin ? "SECURITY PROTOCOL" : "NEW REGISTRATION";
+            document.getElementById('action-btn').innerText = isLogin ? "Accedi" : "Invia Codice";
+            document.getElementById('toggle-container').innerHTML = isLogin ? 
                 'Nuova unità? <span onclick="toggleMode()">Registrati</span>' : 
                 'Hai già un account? <span onclick="toggleMode()">Accedi</span>';
         }
 
-        function handleAction() {
+        async function handleAction() {
             const user = document.getElementById('username').value.trim();
             const pass = document.getElementById('password').value.trim();
+            const email = document.getElementById('email').value.trim();
             const errorBox = document.getElementById('error-box');
 
-            if (!user || !pass) {
-                showError("Dati richiesti mancanti.");
-                return;
-            }
-
-            let users = JSON.parse(localStorage.getItem('kyros_users')) || {};
-
             if (isLogin) {
-                // LOGICA LOGIN
-                if ((user === OWNER.user && pass === OWNER.pass) || (users[user] && users[user] === pass)) {
-                    const role = (user === OWNER.user) ? "Owner" : "User";
+                let users = JSON.parse(localStorage.getItem('kyros_users')) || {};
+                // Verifica Owner o Utente standard
+                if ((user === OWNER.user && pass === OWNER.pass) || (users[user] && users[user].pass === pass)) {
                     sessionStorage.setItem('kyros_session', user);
-                    sessionStorage.setItem('kyros_role', role);
+                    sessionStorage.setItem('kyros_role', user === OWNER.user ? "Owner" : "User");
                     
-                    document.getElementById('action-btn').innerText = "Autorizzato...";
-                    // Assicurati che il file della chat si chiami index.html o chat.html
-                    setTimeout(() => { window.location.href = "loading.html"; }, 500);
+                    document.getElementById('action-btn').innerText = "AUTORIZZATO...";
+                    setTimeout(() => { window.location.href = "loading.html"; }, 800);
                 } else {
-                    showError("Credenziali Errate.");
+                    showError("Accesso negato: credenziali errate.");
                 }
             } else {
-                // LOGICA REGISTRAZIONE
-                if (users[user] || user === OWNER.user) {
-                    showError("Identità già esistente.");
-                } else {
-                    users[user] = pass;
-                    localStorage.setItem('kyros_users', JSON.stringify(users));
-                    alert("Account creato con successo!");
-                    toggleMode();
-                }
+                // REGISTRAZIONE
+                if (!user || !pass || !email) return showError("Tutti i parametri sono richiesti.");
+                
+                let users = JSON.parse(localStorage.getItem('kyros_users')) || {};
+                if (users[user] || user === OWNER.user) return showError("Identità già presente.");
+
+                generatedCode = Math.floor(100000 + Math.random() * 900000);
+                pendingUser = { user, pass, email };
+
+                const btn = document.getElementById('action-btn');
+                btn.innerText = "TRASMISSIONE...";
+                btn.disabled = true;
+
+                // Invio con i tuoi ID
+                emailjs.send("service_1l3bjmp", "template_iu9qkk5", {
+                    to_email: email,
+                    code: generatedCode,
+                    user_name: user
+                }).then(() => {
+                    document.getElementById('verify-overlay').style.display = 'flex';
+                }, (err) => {
+                    showError("Errore di rete. Verifica la tua connessione.");
+                    btn.innerText = "Invia Codice";
+                    btn.disabled = false;
+                });
+            }
+        }
+
+        function confirmRegistration() {
+            const inputCode = document.getElementById('verify-code-input').value.trim();
+            if (inputCode == generatedCode) {
+                let users = JSON.parse(localStorage.getItem('kyros_users')) || {};
+                users[pendingUser.user] = { 
+                    pass: pendingUser.pass, 
+                    email: pendingUser.email 
+                };
+                localStorage.setItem('kyros_users', JSON.stringify(users));
+                
+                alert("Identità Verificata. Benvenuto nel nucleo.");
+                location.reload(); // Torna al login per accedere
+            } else {
+                alert("Codice non valido. Accesso negato.");
             }
         }
 
         function showError(msg) {
             const box = document.getElementById('error-box');
-            box.innerText = msg;
-            box.style.display = "block";
+            box.innerText = msg; box.style.display = "block";
+            setTimeout(() => { box.style.display = 'none'; }, 4000);
         }
     </script>
 </body>
