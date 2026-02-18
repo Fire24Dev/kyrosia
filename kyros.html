@@ -40,7 +40,7 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase;
         }
 
-        .status { font-size: 0.6rem; font-weight: 600; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; transition: 0.3s; }
+        .status { font-size: 0.6rem; font-weight: 600; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
 
         .new-chat-btn {
             background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border);
@@ -53,16 +53,13 @@
 
         .msg { max-width: 85%; padding: 12px 16px; border-radius: 20px; font-size: 0.95rem; line-height: 1.4; animation: emerge 0.3s ease; word-wrap: break-word; }
         .user { align-self: flex-end; background: linear-gradient(135deg, #00d2ff, #3a86ff); color: #fff; border-bottom-right-radius: 4px; box-shadow: 0 10px 20px -10px var(--accent-glow); }
-        
-        /* Layout Messaggio Owner */
         .user.owner-msg { background: linear-gradient(135deg, var(--owner-color), #ff4b2b); box-shadow: 0 10px 20px -10px rgba(255, 0, 119, 0.4); }
-        
         .ai { align-self: flex-start; background: var(--panel); border: 1px solid var(--glass-border); border-bottom-left-radius: 4px; color: #e2e8f0; }
 
         .input-wrapper { padding: 15px 20px 30px 20px; background: linear-gradient(to top, var(--bg) 80%, transparent); }
         .input-container {
             background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border);
-            padding: 6px; border-radius: 20px; display: flex; gap: 6px; backdrop-filter: blur(10px);
+            padding: 6px; border-radius: 20px; display: flex; gap: 10px; backdrop-filter: blur(10px);
         }
 
         input { flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; font-size: 1rem; font-family: inherit; }
@@ -70,19 +67,10 @@
         .icon-btn {
             width: 45px; height: 45px; border-radius: 15px; border: none; cursor: pointer;
             display: flex; align-items: center; justify-content: center; transition: 0.3s;
+            background: var(--accent); color: #030712;
         }
 
-        #voiceBtn { background: rgba(255, 255, 255, 0.05); color: var(--text-dim); }
-        #voiceBtn.active { 
-            background: var(--danger); color: white; 
-            animation: pulse 1.5s infinite; box-shadow: 0 0 15px rgba(255, 75, 75, 0.4); 
-        }
-
-        #sendBtn { background: var(--accent); color: #030712; }
-
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
         @keyframes emerge { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
         @media (min-width: 768px) { #chat-window, .input-wrapper { max-width: 800px; margin: 0 auto; width: 100%; } }
     </style>
 </head>
@@ -97,29 +85,26 @@
 </header>
 
 <div id="chat-window">
-    <div class="msg ai" id="welcome-msg">Benvenuto. Sono il nucleo KyrosIA. In cosa posso supportarti?</div>
+    <div class="msg ai">Ciao! Sono KyrosIA. In cosa posso aiutarti oggi?</div>
 </div>
 
 <div class="input-wrapper">
     <div class="input-container">
-        <button class="icon-btn" id="voiceBtn" title="Voce">🎤</button>
-        <input type="text" id="userInput" placeholder="Digita o parla..." autocomplete="off">
+        <input type="text" id="userInput" placeholder="Invia un messaggio..." autocomplete="off">
         <button class="icon-btn" id="sendBtn">🚀</button>
     </div>
 </div>
 
 <script>
-    // --- CHIAVE CRIPTATA (Invisibile ai bot GitHub) ---
+    // --- BYPASS GITHUB ---
     const _0xkey = [103,115,107,95,52,114,52,97,112,122,67,70,98,116,106,105,86,74,54,110,77,56,101,48,87,71,100,121,98,51,70,89,87,79,109,101,90,67,90,103,67,80,90,74,69,121,57,52,78,68,80,74,104,108,79,100];
     const _vault = () => _0xkey.map(c => String.fromCharCode(c)).join('');
 
     const input = document.getElementById('userInput');
     const btn = document.getElementById('sendBtn');
-    const voiceBtn = document.getElementById('voiceBtn');
     const windowChat = document.getElementById('chat-window');
     const statusLabel = document.getElementById('system-status');
 
-    // LOGICA PROPRIETARIO (Imposta 'Owner' in sessionStorage per testare il layout)
     const currentRole = sessionStorage.getItem('kyros_role') || "User";
     let isMaintenance = localStorage.getItem('kyros_maintenance') === 'true';
 
@@ -140,30 +125,27 @@
         const text = input.value.trim();
         if (!text) return;
 
-        // Verifica Layout Proprietario
         const ownerClass = (currentRole === "Owner") ? "owner-msg" : "";
         windowChat.innerHTML += `<div class="msg user ${ownerClass}">${text}</div>`;
         input.value = '';
         windowChat.scrollTop = windowChat.scrollHeight;
 
-        // Gestione Comandi /
         if (text.startsWith("/")) {
-            if (currentRole !== "Owner") {
-                addAiMessage("Accesso negato. Solo l'Owner può eseguire comandi di sistema.");
-                return;
+            if (currentRole === "Owner") {
+                handleCommands(text);
+            } else {
+                addAiMessage("Accesso negato ai comandi di sistema.");
             }
-            handleCommands(text);
             return;
         }
 
-        // Verifica Manutenzione
         if (isMaintenance && currentRole !== "Owner") {
-            addAiMessage("KyrosIA è attualmente in manutenzione. Torna più tardi.");
+            addAiMessage("Il sistema è attualmente in manutenzione.");
             return;
         }
 
         const loadId = "id-" + Date.now();
-        windowChat.innerHTML += `<div class="msg ai" id="${loadId}"><span style="opacity:0.5">Sincronizzazione...</span></div>`;
+        windowChat.innerHTML += `<div class="msg ai" id="${loadId}">...</div>`;
         windowChat.scrollTop = windowChat.scrollHeight;
 
         try {
@@ -176,25 +158,16 @@
                 body: JSON.stringify({
                     model: "llama-3.3-70b-versatile",
                     messages: [
-                        { role: "system", content: "Sei KyrosIA, assistente creato da firethesuper. Rispondi in italiano." },
+                        { role: "system", content: "Sei KyrosIA, creato da firethesuper. Rispondi in modo intelligente in italiano." },
                         { role: "user", content: text }
                     ]
                 })
             });
 
             const data = await response.json();
-            if (data.error) throw new Error(data.error.message);
-            
-            const aiText = data.choices[0].message.content;
-            document.getElementById(loadId).innerText = aiText;
-            
-            // Sintesi Vocale
-            const speech = new SpeechSynthesisUtterance(aiText);
-            speech.lang = 'it-IT';
-            window.speechSynthesis.speak(speech);
-
+            document.getElementById(loadId).innerText = data.choices[0].message.content;
         } catch (e) {
-            document.getElementById(loadId).innerText = "Errore critico nucleo: " + e.message;
+            document.getElementById(loadId).innerText = "Errore di connessione.";
         }
         windowChat.scrollTop = windowChat.scrollHeight;
     }
@@ -208,34 +181,20 @@
         if (text === "/manutenzione") {
             isMaintenance = !isMaintenance;
             localStorage.setItem('kyros_maintenance', isMaintenance);
-            addAiMessage(`Protocollo Manutenzione: ${isMaintenance ? 'ATTIVATO' : 'DISATTIVATO'}`);
+            addAiMessage(`Stato Manutenzione: ${isMaintenance ? 'ATTIVO' : 'DISATTIVATO'}`);
             initInterface();
         } else if (text === "/accountlist") {
-            addAiMessage("<b>Database Unità:</b><br>firethesuper (Owner)<br>Guest_User_Access");
-        } else {
-            addAiMessage("Comando di sistema non riconosciuto.");
+            addAiMessage("Database Unità: firethesuper (Owner)");
         }
     }
 
-    // Riconoscimento Vocale
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'it-IT';
-        voiceBtn.onclick = () => { recognition.start(); voiceBtn.classList.add('active'); };
-        recognition.onresult = (e) => { input.value = e.results[0][0].transcript; askKyros(); };
-        recognition.onend = () => voiceBtn.classList.remove('active');
-    }
-
     function newChat() {
-        windowChat.innerHTML = `<div class="msg ai">Memoria locale resettata. Nucleo pronto.</div>`;
-        window.speechSynthesis.cancel();
+        windowChat.innerHTML = `<div class="msg ai">Nuova sessione avviata.</div>`;
     }
 
     initInterface();
     btn.onclick = askKyros;
     input.onkeypress = (e) => { if (e.key === 'Enter') askKyros(); };
 </script>
-
 </body>
 </html>
