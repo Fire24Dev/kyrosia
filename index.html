@@ -3,210 +3,268 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KyrosIA - Portale d'Accesso</title>
+    <title>KyrosIA - Secure Evolution</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
-        :root { 
-            --bg: #02040a; 
-            --accent: #00f2ff; 
-            --panel: rgba(10, 15, 25, 0.7); 
+        :root {
+            --bg: #050810;
+            --panel: rgba(13, 18, 30, 0.75);
+            --accent: #00d2ff;
+            --accent-glow: rgba(0, 210, 255, 0.4);
+            --text: #ffffff;
             --text-dim: #94a3b8;
+            --owner-color: #ff0077;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --danger: #ff4b4b;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: var(--bg); 
-            height: 100dvh; display: flex; justify-content: center; align-items: center;
-            overflow: hidden; color: white;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 210, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(255, 0, 119, 0.05) 0%, transparent 40%);
+            color: var(--text); margin: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
         }
 
-        .bg-animate {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            background: radial-gradient(circle at 15% 15%, rgba(0, 242, 255, 0.08) 0%, transparent 40%),
-                        radial-gradient(circle at 85% 85%, rgba(112, 0, 255, 0.1) 0%, transparent 40%);
-            filter: blur(80px);
+        header { 
+            padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;
+            background: rgba(5, 8, 16, 0.8); backdrop-filter: blur(20px); border-bottom: 1px solid var(--glass-border); z-index: 100;
         }
 
-        .login-card {
-            width: 90%; max-width: 400px; padding: 40px;
-            background: var(--panel); backdrop-filter: blur(30px);
-            border-radius: 32px; border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 40px 100px rgba(0,0,0,0.6); text-align: center;
+        .brand h1 { 
+            margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: 2px; 
+            background: linear-gradient(to right, #00d2ff, #3a86ff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase;
         }
 
-        .logo-area { margin-bottom: 35px; }
-        h1 { 
-            font-size: 2.2rem; font-weight: 800; letter-spacing: 6px; 
-            background: linear-gradient(135deg, #fff 30%, var(--accent));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            text-transform: uppercase;
+        .status { font-size: 0.6rem; font-weight: 600; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
+
+        .new-chat-btn {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border);
+            color: var(--text); padding: 8px 15px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; cursor: pointer;
         }
 
-        .subtitle { color: var(--accent); font-size: 0.7rem; font-weight: 700; letter-spacing: 3px; margin-top: 5px; }
-
-        .form-group { margin-bottom: 18px; }
-        input {
-            width: 100%; padding: 16px 20px; border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.05); background: rgba(255, 255, 255, 0.03);
-            color: white; outline: none; font-size: 1rem;
-        }
-        input:focus { border-color: var(--accent); background: rgba(255, 255, 255, 0.07); }
-
-        button {
-            width: 100%; padding: 16px; margin-top: 20px; border-radius: 16px;
-            border: none; font-weight: 800; font-size: 1rem; cursor: pointer;
-            background: white; color: black; text-transform: uppercase;
-        }
-        button:hover { background: var(--accent); transform: translateY(-2px); }
-
-        /* Overlay Codice */
-        #verify-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.92); backdrop-filter: blur(15px);
-            display: none; justify-content: center; align-items: center; z-index: 1000;
+        #chat-window { 
+            flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth;
         }
 
-        .verify-card {
-            background: #0a1120; padding: 40px; border-radius: 32px; border: 1px solid rgba(0, 242, 255, 0.3);
-            text-align: center; max-width: 350px; width: 85%;
-            box-shadow: 0 0 50px rgba(0, 242, 255, 0.1);
+        .msg { max-width: 85%; padding: 12px 16px; border-radius: 20px; font-size: 0.95rem; line-height: 1.4; animation: emerge 0.3s ease; word-wrap: break-word; }
+        .user { align-self: flex-end; background: linear-gradient(135deg, #00d2ff, #3a86ff); color: #fff; border-bottom-right-radius: 4px; box-shadow: 0 10px 20px -10px var(--accent-glow); }
+        .user.owner-msg { background: linear-gradient(135deg, var(--owner-color), #ff4b2b); box-shadow: 0 10px 20px -10px rgba(255, 0, 119, 0.4); }
+        .ai { align-self: flex-start; background: var(--panel); border: 1px solid var(--glass-border); border-bottom-left-radius: 4px; color: #e2e8f0; }
+
+        .input-wrapper { padding: 15px 20px 30px 20px; background: linear-gradient(to top, var(--bg) 80%, transparent); }
+        .input-container {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border);
+            padding: 6px; border-radius: 20px; display: flex; gap: 10px; backdrop-filter: blur(10px);
         }
 
-        #error-box {
-            background: rgba(255, 75, 75, 0.1); color: #ff4b4b;
-            padding: 12px; border-radius: 12px; font-size: 0.85rem;
-            margin-bottom: 20px; display: none; border: 1px solid rgba(255, 75, 75, 0.2);
+        input { flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; font-size: 1rem; font-family: inherit; }
+
+        .icon-btn {
+            width: 45px; height: 45px; border-radius: 15px; border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: 0.3s;
+            background: var(--accent); color: #030712;
         }
 
-        .footer-links { margin-top: 30px; font-size: 0.85rem; color: var(--text-dim); }
-        .footer-links span { color: white; font-weight: 600; cursor: pointer; text-decoration: underline; }
+        @keyframes emerge { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @media (min-width: 768px) { #chat-window, .input-wrapper { max-width: 800px; margin: 0 auto; width: 100%; } }
     </style>
 </head>
 <body>
-    <div class="bg-animate"></div>
 
-    <div class="login-card">
-        <div class="logo-area">
-            <h1>KYROS IA</h1>
-            <div class="subtitle" id="status-tag">SECURITY PROTOCOL</div>
-        </div>
-        <div id="error-box"></div>
-        
-        <div class="form-group"><input type="text" id="username" placeholder="Identificativo" autocomplete="off"></div>
-        <div class="form-group" id="email-group" style="display:none;"><input type="email" id="email" placeholder="Indirizzo Email"></div>
-        <div class="form-group"><input type="password" id="password" placeholder="Access Key"></div>
-        
-        <button onclick="handleAction()" id="action-btn">Accedi</button>
-        
-        <div class="footer-links" id="toggle-container">
-            Nuova unità? <span onclick="toggleMode()">Registrati</span>
-        </div>
+<header>
+    <div class="brand">
+        <h1>KYROS IA</h1>
+        <div class="status" id="system-status">SISTEMA OFFLINE</div>
     </div>
+    <button class="new-chat-btn" onclick="newChat()">NUOVA CHAT</button>
+</header>
 
-    <div id="verify-overlay">
-        <div class="verify-card">
-            <h2 style="margin-bottom: 10px; color: #fff;">Verifica Nucleo</h2>
-            <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 25px;">Inserisci il codice trasmesso alla tua email per finalizzare l'identità.</p>
-            <input type="text" id="verify-code-input" placeholder="------" maxlength="6" style="text-align: center; font-size: 1.5rem; letter-spacing: 8px; margin-bottom: 20px; border-color: var(--accent);">
-            <button onclick="confirmRegistration()" style="background: var(--accent);">Verifica Codice</button>
-            <p onclick="location.reload()" style="margin-top: 20px; font-size: 0.75rem; cursor: pointer; opacity: 0.6;">Annulla</p>
-        </div>
+<div id="chat-window">
+    <div class="msg ai" id="welcome-msg">Sincronizzazione in corso...</div>
+</div>
+
+<div class="input-wrapper">
+    <div class="input-container">
+        <input type="text" id="userInput" placeholder="Scrivi un messaggio..." autocomplete="off">
+        <button class="icon-btn" id="sendBtn">🚀</button>
     </div>
+</div>
 
-    <script>
-        // Inizializzazione con le tue chiavi
-        (function(){
-            emailjs.init("TayTydvJKxPtEyu-W"); 
-        })();
+<script>
+    const _0xkey = [103,115,107,95,52,114,52,97,112,122,67,70,98,116,106,105,86,74,54,110,77,56,101,48,87,71,100,121,98,51,70,89,87,79,109,101,90,67,90,103,67,80,90,74,69,121,57,52,78,68,80,74,104,108,79,100];
+    const _vault = () => _0xkey.map(c => String.fromCharCode(c)).join('');
 
-        let isLogin = true;
-        let generatedCode = null;
-        let pendingUser = {};
+    const input = document.getElementById('userInput');
+    const btn = document.getElementById('sendBtn');
+    const windowChat = document.getElementById('chat-window');
+    const statusLabel = document.getElementById('system-status');
+    const welcome = document.getElementById('welcome-msg');
 
-        const OWNER = { user: "firethesuper", pass: "Auromat1730!" };
+    // STATO LOGIN
+    let currentNickname = localStorage.getItem('username') || "Ospite";
+    let isOwnerAuthenticated = false; // Diventa true solo con password
+    
+    // DB LOCALE
+    let isMaintenance = localStorage.getItem('kyros_maintenance') === 'true';
+    let blacklist = JSON.parse(localStorage.getItem('kyros_blacklist')) || [];
+    let mutes = JSON.parse(localStorage.getItem('kyros_mutes')) || {};
 
-        function toggleMode() {
-            isLogin = !isLogin;
-            document.getElementById('email-group').style.display = isLogin ? 'none' : 'block';
-            document.getElementById('status-tag').innerText = isLogin ? "SECURITY PROTOCOL" : "NEW REGISTRATION";
-            document.getElementById('action-btn').innerText = isLogin ? "Accedi" : "Invia Codice";
-            document.getElementById('toggle-container').innerHTML = isLogin ? 
-                'Nuova unità? <span onclick="toggleMode()">Registrati</span>' : 
-                'Hai già un account? <span onclick="toggleMode()">Accedi</span>';
+    function init() {
+        const wantsToBeOwner = (currentNickname.toLowerCase() === "firethesuper");
+        
+        if (wantsToBeOwner && !isOwnerAuthenticated) {
+            statusLabel.innerText = "ACCESSO PROTETTO";
+            statusLabel.style.color = "var(--danger)";
+            welcome.innerHTML = "Rilevato nickname Owner. Per favore, <b>inserisci la password</b> per sbloccare i protocolli.";
+            input.type = "password"; 
+            input.placeholder = "Password di sicurezza...";
+        } else if (isOwnerAuthenticated) {
+            statusLabel.innerText = "OWNER: firethesuper";
+            statusLabel.style.color = "var(--owner-color)";
+            welcome.innerHTML = "Autenticazione completata. Benvenuto, <b>Owner</b>.";
+            input.type = "text";
+            input.placeholder = "Messaggio o comando...";
+        } else {
+            statusLabel.innerText = "UTENTE: " + currentNickname;
+            statusLabel.style.color = "var(--accent)";
+            welcome.innerHTML = `Identità: <b>${currentNickname}</b>. Come posso aiutarti?`;
+            input.type = "text";
         }
+    }
 
-        async function handleAction() {
-            const user = document.getElementById('username').value.trim();
-            const pass = document.getElementById('password').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const errorBox = document.getElementById('error-box');
+    async function handleMessage() {
+        const text = input.value.trim();
+        if (!text) return;
 
-            if (isLogin) {
-                let users = JSON.parse(localStorage.getItem('kyros_users')) || {};
-                // Verifica Owner o Utente standard
-                if ((user === OWNER.user && pass === OWNER.pass) || (users[user] && users[user].pass === pass)) {
-                    sessionStorage.setItem('kyros_session', user);
-                    sessionStorage.setItem('kyros_role', user === OWNER.user ? "Owner" : "User");
-                    
-                    document.getElementById('action-btn').innerText = "AUTORIZZATO...";
-                    setTimeout(() => { window.location.href = "loading.html"; }, 800);
-                } else {
-                    showError("Accesso negato: credenziali errate.");
-                }
+        // --- GESTIONE PASSWORD OWNER ---
+        if (currentNickname.toLowerCase() === "firethesuper" && !isOwnerAuthenticated) {
+            if (text === "Auromat1730!") {
+                isOwnerAuthenticated = true;
+                input.value = '';
+                init();
+                addAiMsg("Password corretta. Poteri di amministrazione attivati.");
             } else {
-                // REGISTRAZIONE
-                if (!user || !pass || !email) return showError("Tutti i parametri sono richiesti.");
-                
-                let users = JSON.parse(localStorage.getItem('kyros_users')) || {};
-                if (users[user] || user === OWNER.user) return showError("Identità già presente.");
-
-                generatedCode = Math.floor(100000 + Math.random() * 900000);
-                pendingUser = { user, pass, email };
-
-                const btn = document.getElementById('action-btn');
-                btn.innerText = "TRASMISSIONE...";
-                btn.disabled = true;
-
-                // Invio con i tuoi ID
-                emailjs.send("service_1l3bjmp", "template_iu9qkk5", {
-                    to_email: email,
-                    code: generatedCode,
-                    user_name: user
-                }).then(() => {
-                    document.getElementById('verify-overlay').style.display = 'flex';
-                }, (err) => {
-                    showError("Errore di rete. Verifica la tua connessione.");
-                    btn.innerText = "Invia Codice";
-                    btn.disabled = false;
-                });
+                addAiMsg("Password errata. Riprova o cambia account.");
+                input.value = '';
             }
+            return;
         }
 
-        function confirmRegistration() {
-            const inputCode = document.getElementById('verify-code-input').value.trim();
-            if (inputCode == generatedCode) {
-                let users = JSON.parse(localStorage.getItem('kyros_users')) || {};
-                users[pendingUser.user] = { 
-                    pass: pendingUser.pass, 
-                    email: pendingUser.email 
-                };
-                localStorage.setItem('kyros_users', JSON.stringify(users));
-                
-                alert("Identità Verificata. Benvenuto nel nucleo.");
-                location.reload(); // Torna al login per accedere
-            } else {
-                alert("Codice non valido. Accesso negato.");
-            }
+        // --- CONTROLLO BAN / MUTE ---
+        if (blacklist.includes(currentNickname) && !isOwnerAuthenticated) {
+            addAiMsg("Accesso negato. Sei stato bannato.");
+            input.value = '';
+            return;
         }
 
-        function showError(msg) {
-            const box = document.getElementById('error-box');
-            box.innerText = msg; box.style.display = "block";
-            setTimeout(() => { box.style.display = 'none'; }, 4000);
+        const muteLeft = checkMute(currentNickname);
+        if (muteLeft > 0 && !isOwnerAuthenticated) {
+            addAiMsg(`Sei mutato per altri ${muteLeft} minuti.`);
+            input.value = '';
+            return;
         }
-    </script>
+
+        // --- INVIO MESSAGGIO ---
+        windowChat.innerHTML += `<div class="msg user ${isOwnerAuthenticated ? 'owner-msg' : ''}">${text}</div>`;
+        input.value = '';
+        windowChat.scrollTop = windowChat.scrollHeight;
+
+        // COMANDI
+        if (text.startsWith("/")) {
+            if (isOwnerAuthenticated) handleCommands(text);
+            else addAiMsg("Permessi insufficienti.");
+            return;
+        }
+
+        // MANUTENZIONE
+        if (isMaintenance && !isOwnerAuthenticated) {
+            addAiMsg("Il sistema è in manutenzione.");
+            return;
+        }
+
+        // CHIAMATA AI
+        const tempId = "ai-" + Date.now();
+        windowChat.innerHTML += `<div class="msg ai" id="${tempId}">...</div>`;
+        
+        try {
+            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${_vault()}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    model: "llama-3.3-70b-versatile",
+                    messages: [{ role: "system", content: "Sei KyrosIA, creato da firethesuper." }, { role: "user", content: text }]
+                })
+            });
+            const data = await response.json();
+            document.getElementById(tempId).innerText = data.choices[0].message.content;
+        } catch (e) { document.getElementById(tempId).innerText = "Errore nucleo."; }
+        windowChat.scrollTop = windowChat.scrollHeight;
+    }
+
+    function checkMute(nick) {
+        if (mutes[nick]) {
+            const now = Date.now();
+            if (now < mutes[nick]) return Math.ceil((mutes[nick] - now) / 60000);
+            delete mutes[nick];
+            localStorage.setItem('kyros_mutes', JSON.stringify(mutes));
+        }
+        return 0;
+    }
+
+    function handleCommands(text) {
+        const p = text.split(" ");
+        const cmd = p[0].toLowerCase();
+        const target = p[1];
+        const val = parseInt(p[2]);
+
+        switch(cmd) {
+            case "/help":
+                addAiMsg("<b>Comandi:</b> /ban, /unban, /mute, /unmute, /manutenzione, /accountlist");
+                break;
+            case "/ban":
+                if (target === "firethesuper") return addAiMsg("Impossibile bannare l'Owner.");
+                blacklist.push(target);
+                localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
+                addAiMsg(`Utente ${target} bannato.`);
+                break;
+            case "/unban":
+                blacklist = blacklist.filter(u => u !== target);
+                localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
+                addAiMsg(`Utente ${target} sbannato.`);
+                break;
+            case "/mute":
+                mutes[target] = Date.now() + (val * 60000);
+                localStorage.setItem('kyros_mutes', JSON.stringify(mutes));
+                addAiMsg(`${target} mutato.`);
+                break;
+            case "/unmute":
+                delete mutes[target];
+                localStorage.setItem('kyros_mutes', JSON.stringify(mutes));
+                addAiMsg(`${target} smutato.`);
+                break;
+            case "/manutenzione":
+                isMaintenance = !isMaintenance;
+                localStorage.setItem('kyros_maintenance', isMaintenance);
+                init();
+                addAiMsg("Manutenzione: " + isMaintenance);
+                break;
+            case "/accountlist":
+                addAiMsg(`BANNATI: ${blacklist.join(", ")} | MUTATI: ${Object.keys(mutes).join(", ")}`);
+                break;
+        }
+    }
+
+    function addAiMsg(t) { windowChat.innerHTML += `<div class="msg ai">${t}</div>`; windowChat.scrollTop = windowChat.scrollHeight; }
+    function newChat() { windowChat.innerHTML = ""; init(); }
+
+    init();
+    btn.onclick = handleMessage;
+    input.onkeypress = (e) => { if (e.key === 'Enter') handleMessage(); };
+</script>
 </body>
 </html>
