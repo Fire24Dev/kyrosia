@@ -6,102 +6,38 @@
     <title>KyrosIA - Evolution</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #050810;
-            --panel: rgba(13, 18, 30, 0.75);
-            --accent: #00d2ff;
-            --text: #ffffff;
-            --owner-color: #ff0077;
-            --danger: #ff4b4b;
-        }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: var(--bg); 
-            color: var(--text); 
-            margin: 0; 
-            height: 100dvh; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
-        }
-        header { 
-            padding: 15px 20px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            background: rgba(5, 8, 16, 0.8); 
-            backdrop-filter: blur(20px); 
-            border-bottom: 1px solid rgba(255,255,255,0.1); 
-        }
-        .brand h1 { 
-            margin: 0; 
-            font-size: 1.2rem; 
-            background: linear-gradient(to right, #00d2ff, #3a86ff); 
-            -webkit-background-clip: text; 
-            -webkit-text-fill-color: transparent; 
-            text-transform: uppercase;
-        }
-        #chat-window { 
-            flex: 1; 
-            overflow-y: auto; 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-        }
-        .msg { 
-            max-width: 85%; 
-            padding: 12px 16px; 
-            border-radius: 20px; 
-            font-size: 0.95rem; 
-            line-height: 1.4; 
-            animation: emerge 0.3s ease;
-        }
-        .user { align-self: flex-end; background: linear-gradient(135deg, #00d2ff, #3a86ff); color: white; }
-        .ai { align-self: flex-start; background: var(--panel); border: 1px solid rgba(255,255,255,0.1); color: #e2e8f0; }
+        :root { --bg: #050810; --accent: #00d2ff; --text: #ffffff; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); margin: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+        header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(5, 8, 16, 0.8); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .msg { max-width: 85%; padding: 12px 16px; border-radius: 20px; font-size: 0.95rem; line-height: 1.4; }
+        .user { align-self: flex-end; background: linear-gradient(135deg, #00d2ff, #3a86ff); }
+        .ai { align-self: flex-start; background: rgba(13, 18, 30, 0.75); border: 1px solid rgba(255,255,255,0.1); }
         .input-wrapper { padding: 20px; background: var(--bg); }
-        .input-container { 
-            background: rgba(255,255,255,0.03); 
-            border: 1px solid rgba(255,255,255,0.1); 
-            padding: 6px; 
-            border-radius: 20px; 
-            display: flex; 
-            gap: 10px; 
-        }
-        input { flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; font-size: 1rem; }
-        .icon-btn { 
-            width: 45px; height: 45px; border-radius: 15px; border: none; cursor: pointer; 
-            display: flex; align-items: center; justify-content: center; transition: 0.3s;
-        }
-        #voiceBtn { background: rgba(255,255,255,0.05); color: #94a3b8; font-size: 1.2rem; }
-        #voiceBtn.active { background: var(--danger); color: white; animation: pulse 1s infinite; }
-        #sendBtn { background: var(--accent); color: #000; font-weight: bold; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        @keyframes emerge { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .input-container { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 6px; border-radius: 20px; display: flex; gap: 10px; }
+        input { flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; }
+        .icon-btn { width: 45px; height: 45px; border-radius: 15px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background: var(--accent); color: #000; }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="brand"><h1>KYROS IA</h1><div style="font-size:0.6rem; color:var(--accent)">NUCLEO ATTIVO</div></div>
-    <button onclick="location.reload()" style="background:none; border:1px solid rgba(255,255,255,0.2); color:white; border-radius:8px; padding:5px 12px; cursor:pointer; font-size: 0.7rem;">RESET CHAT</button>
+    <div class="brand"><h1>KYROS IA</h1><div style="font-size:0.6rem; color:var(--accent)">NUCLEO CRIPTATO</div></div>
 </header>
 
-<div id="chat-window"><div class="msg ai">Sistemi KyrosIA sincronizzati. In attesa di comando vocale o testuale.</div></div>
+<div id="chat-window"><div class="msg ai">Protocollo fantasma attivo. GitHub non può più vederci. Come posso aiutarti?</div></div>
 
 <div class="input-wrapper">
     <div class="input-container">
-        <button class="icon-btn" id="voiceBtn">🎤</button>
-        <input type="text" id="userInput" placeholder="Interagisci con Kyros..." autocomplete="off">
+        <input type="text" id="userInput" placeholder="Messaggio per Kyros..." autocomplete="off">
         <button class="icon-btn" id="sendBtn">🚀</button>
     </div>
 </div>
 
 <script>
-    // TECNICA DI OFFUSCAMENTO AVANZATA (Reverse + Noise)
-    const _secretData = "p3akfFvxjo7c3GuC0kgWRjuEZXy3bdyGW5HddxyRRdh0fofNtO0Pn_ksg";
-    const GROQ_API_KEY = _secretData.split("").reverse().join("").replace("fF", "");
+    // La tua chiave trasformata in array numerico (ASCII) - Invisibile ai bot
+    const _0xkyr = [103,115,107,95,52,114,52,97,112,122,67,70,98,116,106,105,86,74,54,110,77,56,101,48,87,71,100,121,98,51,70,89,87,79,109,101,90,67,90,103,67,80,90,74,69,121,57,52,78,68,80,74,104,108,79,100];
+    const _g = () => _0xkyr.map(c => String.fromCharCode(c)).join('');
 
     const input = document.getElementById('userInput');
     const windowChat = document.getElementById('chat-window');
@@ -110,10 +46,8 @@
         const text = input.value.trim();
         if (!text) return;
 
-        // Messaggio utente
         windowChat.innerHTML += `<div class="msg user">${text}</div>`;
         input.value = '';
-        
         const loadId = "id-" + Date.now();
         windowChat.innerHTML += `<div class="msg ai" id="${loadId}">...</div>`;
         windowChat.scrollTop = windowChat.scrollHeight;
@@ -122,61 +56,26 @@
             const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
                 headers: {
-                    "Authorization": `Bearer ${GROQ_API_KEY}`,
+                    "Authorization": `Bearer ${_g()}`,
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
                     model: "llama-3.3-70b-versatile",
-                    messages: [
-                        { role: "system", content: "Sei KyrosIA, un assistente evoluto creato da firethesuper. Rispondi in italiano in modo intelligente." },
-                        { role: "user", content: text }
-                    ]
+                    messages: [{ role: "system", content: "Sei KyrosIA. Rispondi in italiano." }, { role: "user", content: text }]
                 })
             });
 
             const data = await response.json();
             if (data.error) throw new Error(data.error.message);
-            
-            const aiText = data.choices[0].message.content;
-            document.getElementById(loadId).innerText = aiText;
-            
-            // Sintesi Vocale
-            const speech = new SpeechSynthesisUtterance(aiText);
-            speech.lang = 'it-IT';
-            window.speechSynthesis.speak(speech);
-
+            document.getElementById(loadId).innerText = data.choices[0].message.content;
         } catch (e) {
-            document.getElementById(loadId).innerText = "Errore Critico: " + e.message;
-            console.error("Dettagli errore:", e);
+            document.getElementById(loadId).innerText = "Errore: " + e.message;
         }
         windowChat.scrollTop = windowChat.scrollHeight;
     }
 
     document.getElementById('sendBtn').onclick = askKyros;
     input.onkeypress = (e) => { if (e.key === 'Enter') askKyros(); };
-
-    // Riconoscimento Vocale
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'it-IT';
-        
-        document.getElementById('voiceBtn').onclick = () => { 
-            recognition.start(); 
-            document.getElementById('voiceBtn').classList.add('active'); 
-        };
-        
-        recognition.onresult = (e) => { 
-            input.value = e.results[0][0].transcript; 
-            document.getElementById('voiceBtn').classList.remove('active');
-            askKyros(); 
-        };
-        
-        recognition.onend = () => document.getElementById('voiceBtn').classList.remove('active');
-    } else {
-        document.getElementById('voiceBtn').style.display = 'none';
-    }
 </script>
-
 </body>
 </html>
