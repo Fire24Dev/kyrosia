@@ -24,7 +24,7 @@
         #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
         .msg { max-width: 85%; padding: 12px 16px; border-radius: 20px; font-size: 0.95rem; line-height: 1.4; animation: emerge 0.3s ease; word-wrap: break-word; }
         
-        /* Testo ciccione per i nomi nei messaggi */
+        /* Testo ciccione per l'utente */
         .msg b { font-weight: 800; color: var(--accent); }
         .owner-msg b { color: #fff; }
 
@@ -44,13 +44,13 @@
 <header>
     <div style="font-weight: 800; letter-spacing: 2px; background: linear-gradient(to right, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">KYROS IA</div>
     <div class="status" id="statusLabel">SINCRONIZZAZIONE...</div>
-    <button onclick="logout()" style="width: auto; padding: 5px 10px; font-size: 0.6rem; background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--glass-border);">LOGOUT</button>
+    <button onclick="logout()" style="width: auto; padding: 5px 10px; font-size: 0.6rem; background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--glass-border); cursor: pointer; border-radius: 8px;">LOGOUT</button>
 </header>
 
 <div id="chat-window"></div>
 
 <div class="input-area">
-    <input type="text" id="userInput" placeholder="Invia un messaggio o comando..." autocomplete="off">
+    <input type="text" id="userInput" placeholder="Messaggio o comando..." autocomplete="off">
     <button onclick="handleSend()">🚀</button>
 </div>
 
@@ -65,10 +65,8 @@
     const chatWin = document.getElementById('chat-window');
     const input = document.getElementById('userInput');
 
-    // Database Locale per Comandi
     let isMaintenance = localStorage.getItem('kyros_maintenance') === 'true';
     let blacklist = JSON.parse(localStorage.getItem('kyros_blacklist')) || [];
-    let mutes = JSON.parse(localStorage.getItem('kyros_mutes')) || {};
 
     if (!currentNick) { window.location.href = "index.html"; }
 
@@ -76,10 +74,10 @@
         if (userRole === "Owner") {
             statusLabel.innerText = "OWNER: " + currentNick;
             statusLabel.style.color = "var(--owner-color)";
-            addMsg("ai", `Benvenuto nel nucleo, <b>${currentNick}</b>. Comandi sbloccati.`);
+            addMsg("ai", `Sistemi sbloccati. Benvenuto <b>${currentNick}</b>.`);
         } else {
             statusLabel.innerText = "UTENTE: " + currentNick;
-            addMsg("ai", `Identità confermata: <b>${currentNick}</b>. Come posso aiutarti?`);
+            addMsg("ai", `Identità confermata: <b>${currentNick}</b>. In attesa di input.`);
         }
     }
 
@@ -87,33 +85,25 @@
         const text = input.value.trim();
         if (!text) return;
 
-        // --- CONTROLLI SICUREZZA ---
         if (blacklist.includes(currentNick) && userRole !== "Owner") {
-            addMsg("ai", "<b>ERRORE:</b> Sei stato bannato dal sistema.");
+            addMsg("ai", "<b>ACCESSO NEGATO:</b> Sei bannato.");
             return;
         }
 
-        // --- INVIO MESSAGGIO ---
         addMsg("user", text);
         input.value = "";
 
-        // --- GESTIONE COMANDI ---
         if (text.startsWith("/")) {
-            if (userRole === "Owner") {
-                handleCommands(text);
-            } else {
-                addMsg("ai", "<b>NEGATO:</b> Non hai i permessi per eseguire comandi.");
-            }
+            if (userRole === "Owner") handleCommands(text);
+            else addMsg("ai", "<b>ERRORE:</b> Solo l'Owner ha accesso ai comandi.");
             return;
         }
 
-        // --- MANUTENZIONE ---
         if (isMaintenance && userRole !== "Owner") {
-            addMsg("ai", "<b>SISTEMA:</b> Manutenzione in corso. Riprova più tardi.");
+            addMsg("ai", "<b>OFFLINE:</b> Manutenzione in corso.");
             return;
         }
 
-        // --- RISPOSTA AI ---
         const tempId = "ai-" + Date.now();
         addMsg("ai", "...", tempId);
 
@@ -124,7 +114,7 @@
                 body: JSON.stringify({
                     model: "llama-3.3-70b-versatile",
                     messages: [
-                        {role: "system", content: "Sei KyrosIA, creato da firethesuper. Rispondi in modo tecnico e audace."},
+                        {role: "system", content: "Sei KyrosIA, creato da firethesuper. Sei audace, intelligente e tecnico."},
                         {role: "user", content: text}
                     ]
                 })
@@ -132,7 +122,7 @@
             const data = await resp.json();
             document.getElementById(tempId).innerHTML = data.choices[0].message.content;
         } catch (e) {
-            document.getElementById(tempId).innerText = "Errore di connessione.";
+            document.getElementById(tempId).innerText = "Errore di rete.";
         }
     }
 
@@ -142,30 +132,29 @@
         const target = p[1];
 
         switch(cmd) {
-            case "/help":
-                addMsg("ai", "<b>COMANDI DISPONIBILI:</b><br>/ban [nome]<br>/unban [nome]<br>/manutenzione<br>/accountlist");
-                break;
             case "/ban":
-                if(!target) return addMsg("ai", "Specifica chi bannare.");
+                if(!target) return addMsg("ai", "Definisci un bersaglio.");
                 if(!blacklist.includes(target)) blacklist.push(target);
                 localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
-                addMsg("ai", `Utente <b>${target}</b> inserito nella blacklist.`);
+                addMsg("ai", `Utente <b>${target}</b> bannato.`);
                 break;
             case "/unban":
                 blacklist = blacklist.filter(u => u !== target);
                 localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
-                addMsg("ai", `Utente <b>${target}</b> rimosso dalla blacklist.`);
+                addMsg("ai", `Utente <b>${target}</b> riabilitato.`);
                 break;
             case "/manutenzione":
                 isMaintenance = !isMaintenance;
                 localStorage.setItem('kyros_maintenance', isMaintenance);
-                addMsg("ai", `Stato manutenzione: <b>${isMaintenance ? "ATTIVO" : "DISATTIVO"}</b>`);
+                addMsg("ai", `Manutenzione: <b>${isMaintenance ? "ATTIVA" : "DISATTIVA"}</b>`);
                 break;
             case "/accountlist":
-                addMsg("ai", `<b>BANNATI:</b> ${blacklist.join(", ") || "Nessuno"}`);
+                addMsg("ai", `<b>Blacklist:</b> ${blacklist.join(", ") || "Vuota"}`);
                 break;
-            default:
-                addMsg("ai", "Comando non riconosciuto.");
+            case "/help":
+                addMsg("ai", "<b>Comandi:</b> /ban, /unban, /manutenzione, /accountlist");
+                break;
+            default: addMsg("ai", "Comando sconosciuto.");
         }
     }
 
@@ -174,9 +163,11 @@
         div.className = `msg ${type} ${ (type === 'user' && userRole === 'Owner') ? 'owner-msg' : '' }`;
         if(id) div.id = id;
         
-        // Aggiunge il nome in grassetto prima del testo
-        const name = (type === 'user') ? `<b>${currentNick}:</b> ` : `<b>KyrosIA:</b> `;
-        div.innerHTML = name + text;
+        if (type === 'user') {
+            div.innerHTML = `<b>${currentNick}:</b> ` + text;
+        } else {
+            div.innerHTML = text; // L'AI non ha prefisso
+        }
         
         chatWin.appendChild(div);
         chatWin.scrollTop = chatWin.scrollHeight;
