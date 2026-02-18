@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -17,12 +16,10 @@
             --text-dim: #94a3b8;
             --owner-color: #ff0077;
             --glass-border: rgba(255, 255, 255, 0.08);
+            --danger: #ff4b4b;
         }
 
-        * { 
-            box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent; 
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -30,168 +27,61 @@
             background-image: 
                 radial-gradient(circle at 10% 20%, rgba(0, 210, 255, 0.05) 0%, transparent 40%),
                 radial-gradient(circle at 90% 80%, rgba(255, 0, 119, 0.05) 0%, transparent 40%);
-            color: var(--text);
-            margin: 0;
-            height: 100dvh; /* Dynamic viewport height per mobile */
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            color: var(--text); margin: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* HEADER FIGO */
         header { 
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(5, 8, 16, 0.8);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--glass-border);
-            z-index: 100;
+            padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;
+            background: rgba(5, 8, 16, 0.8); backdrop-filter: blur(20px); border-bottom: 1px solid var(--glass-border); z-index: 100;
         }
 
         .brand h1 { 
-            margin: 0; 
-            font-size: 1.2rem; 
-            font-weight: 800;
-            letter-spacing: 2px; 
+            margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: 2px; 
             background: linear-gradient(to right, #00d2ff, #3a86ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-transform: uppercase;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase;
         }
 
-        .status { 
-            font-size: 0.6rem; 
-            font-weight: 600;
-            color: var(--accent); 
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
+        .status { font-size: 0.6rem; font-weight: 600; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
 
-        /* BOTTONE NUOVA CHAT */
         .new-chat-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--glass-border);
-            color: var(--text);
-            padding: 8px 15px;
-            border-radius: 10px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border);
+            color: var(--text); padding: 8px 15px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; cursor: pointer;
         }
 
-        .new-chat-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-1px);
-        }
-
-        /* AREA CHAT */
         #chat-window { 
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            scroll-behavior: smooth;
+            flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth;
         }
 
-        /* BOLLE MESSAGGI */
-        .msg { 
-            max-width: 85%;
-            padding: 12px 16px;
-            border-radius: 20px;
-            font-size: 0.95rem;
-            line-height: 1.4;
-            animation: emerge 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-            word-wrap: break-word;
-        }
+        .msg { max-width: 85%; padding: 12px 16px; border-radius: 20px; font-size: 0.95rem; line-height: 1.4; animation: emerge 0.3s ease; word-wrap: break-word; }
+        .user { align-self: flex-end; background: linear-gradient(135deg, #00d2ff, #3a86ff); color: #fff; border-bottom-right-radius: 4px; box-shadow: 0 10px 20px -10px var(--accent-glow); }
+        .user.owner-msg { background: linear-gradient(135deg, var(--owner-color), #ff4b2b); }
+        .ai { align-self: flex-start; background: var(--panel); border: 1px solid var(--glass-border); border-bottom-left-radius: 4px; color: #e2e8f0; }
 
-        .user { 
-            align-self: flex-end;
-            background: linear-gradient(135deg, #00d2ff, #3a86ff);
-            color: #fff;
-            border-bottom-right-radius: 4px;
-            box-shadow: 0 10px 20px -10px var(--accent-glow);
-        }
-
-        .user.owner-msg {
-            background: linear-gradient(135deg, var(--owner-color), #ff4b2b);
-            box-shadow: 0 10px 20px -10px rgba(255, 0, 119, 0.4);
-        }
-
-        .ai { 
-            align-self: flex-start;
-            background: var(--panel);
-            border: 1px solid var(--glass-border);
-            border-bottom-left-radius: 4px;
-            color: #e2e8f0;
-        }
-
-        /* INPUT AREA FLUTTUANTE */
-        .input-wrapper {
-            padding: 15px 20px 30px 20px;
-            background: linear-gradient(to top, var(--bg) 80%, transparent);
-        }
-
+        .input-wrapper { padding: 15px 20px 30px 20px; background: linear-gradient(to top, var(--bg) 80%, transparent); }
         .input-container {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--glass-border);
-            padding: 8px;
-            border-radius: 18px;
-            display: flex;
-            gap: 8px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border);
+            padding: 6px; border-radius: 20px; display: flex; gap: 6px; backdrop-filter: blur(10px);
         }
 
-        input { 
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: white;
-            padding: 10px 15px;
-            outline: none;
-            font-size: 1rem;
-            font-family: inherit;
+        input { flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; font-size: 1rem; font-family: inherit; }
+
+        .icon-btn {
+            width: 45px; height: 45px; border-radius: 15px; border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: 0.3s;
         }
 
-        button#sendBtn { 
-            background: var(--accent);
-            color: #030712;
-            border: none;
-            width: 45px;
-            height: 45px;
-            border-radius: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: 0.2s;
+        #voiceBtn { background: rgba(255, 255, 255, 0.05); color: var(--text-dim); }
+        #voiceBtn.active { 
+            background: var(--danger); color: white; 
+            animation: pulse 1.5s infinite; box-shadow: 0 0 15px rgba(255, 75, 75, 0.4); 
         }
 
-        button#sendBtn:active { transform: scale(0.9); }
+        #sendBtn { background: var(--accent); color: #030712; }
 
-        /* SCROLLBAR */
-        #chat-window::-webkit-scrollbar { width: 4px; }
-        #chat-window::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+        @keyframes emerge { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        @keyframes emerge { 
-            from { opacity: 0; transform: translateY(15px) scale(0.95); } 
-            to { opacity: 1; transform: translateY(0) scale(1); } 
-        }
-
-        /* ADATTAMENTO PC */
-        @media (min-width: 768px) {
-            #chat-window, .input-wrapper {
-                max-width: 800px;
-                margin: 0 auto;
-                width: 100%;
-            }
-            .msg { max-width: 70%; }
-        }
+        @media (min-width: 768px) { #chat-window, .input-wrapper { max-width: 800px; margin: 0 auto; width: 100%; } }
     </style>
 </head>
 <body>
@@ -210,8 +100,13 @@
 
 <div class="input-wrapper">
     <div class="input-container">
-        <input type="text" id="userInput" placeholder="Digita un messaggio..." autocomplete="off">
-        <button id="sendBtn">
+        <button class="icon-btn" id="voiceBtn" title="Parla con Kyros">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+        </button>
+        
+        <input type="text" id="userInput" placeholder="Digita o parla..." autocomplete="off">
+        
+        <button class="icon-btn" id="sendBtn">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
         </button>
     </div>
@@ -220,13 +115,21 @@
 <script>
     const input = document.getElementById('userInput');
     const btn = document.getElementById('sendBtn');
+    const voiceBtn = document.getElementById('voiceBtn');
     const windowChat = document.getElementById('chat-window');
     const statusLabel = document.getElementById('system-status');
 
     const currentUser = sessionStorage.getItem('kyros_session') || "Ospite";
     const currentRole = sessionStorage.getItem('kyros_role') || "User";
-
     let isMaintenance = localStorage.getItem('kyros_maintenance') === 'true';
+
+    // CONFIGURAZIONE VOCALE
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = SpeechRecognition ? new SpeechRecognition() : null;
+    if (recognition) {
+        recognition.lang = 'it-IT';
+        recognition.interimResults = false;
+    }
 
     function initInterface() {
         if (currentRole === "Owner") {
@@ -234,14 +137,16 @@
             statusLabel.style.color = "var(--owner-color)";
         } else if (isMaintenance) {
             statusLabel.innerText = "MANUTENZIONE";
-            statusLabel.style.color = "#ff4444";
-            document.getElementById('welcome-msg').innerText = "KyrosIA - Sistemi in manutenzione.";
+            statusLabel.style.color = "var(--danger)";
         }
     }
 
-    // FUNZIONE NUOVA CHAT
-    function newChat() {
-        windowChat.innerHTML = `<div class="msg ai">Memoria locale pulita. Conversazione resettata.</div>`;
+    function speak(text) {
+        const synth = window.speechSynthesis;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'it-IT';
+        utterance.rate = 1.0;
+        synth.speak(utterance);
     }
 
     async function askKyros() {
@@ -253,41 +158,18 @@
         input.value = '';
         windowChat.scrollTop = windowChat.scrollHeight;
 
+        // Comandi Owner
         if (text.startsWith("/")) {
             if (currentRole !== "Owner") {
-                windowChat.innerHTML += `<div class="msg ai">Permessi insufficienti.</div>`;
+                addAiMessage("Permessi insufficienti.");
                 return;
             }
-
-            if (text.toLowerCase() === "/manutenzione") {
-                isMaintenance = !isMaintenance;
-                localStorage.setItem('kyros_maintenance', isMaintenance);
-                windowChat.innerHTML += `<div class="msg ai">Stato manutenzione: ${isMaintenance ? 'ON' : 'OFF'}</div>`;
-                initInterface();
-                return;
-            }
-
-            if (text.toLowerCase() === "/accountlist") {
-                let users = JSON.parse(localStorage.getItem('kyros_users')) || {};
-                let list = "<b>Database Utenti:</b><br>";
-                for (let u in users) list += `● ${u}<br>`;
-                windowChat.innerHTML += `<div class="msg ai">${list}</div>`;
-            } else if (text.startsWith("/ban ")) {
-                const target = text.replace("/ban ", "").trim();
-                let users = JSON.parse(localStorage.getItem('kyros_users')) || {};
-                if (users[target]) {
-                    delete users[target];
-                    localStorage.setItem('kyros_users', JSON.stringify(users));
-                    windowChat.innerHTML += `<div class="msg ai">Soggetto <b>${target}</b> terminato.</div>`;
-                }
-            }
-            windowChat.scrollTop = windowChat.scrollHeight;
+            handleCommands(text);
             return;
         }
 
         if (isMaintenance && currentRole !== "Owner") {
-            windowChat.innerHTML += `<div class="msg ai">KyrosIA è attualmente in manutenzione. Riprova più tardi.</div>`;
-            windowChat.scrollTop = windowChat.scrollHeight;
+            addAiMessage("KyrosIA è in manutenzione.");
             return;
         }
 
@@ -297,14 +179,58 @@
 
         try {
             let prompt = "Sei KyrosIA, un'IA evoluta. Rispondi in italiano. ";
-            if (currentRole === "Owner") prompt += "Utente autorizzato: firethesuper. ";
-            
             const response = await puter.ai.chat(prompt + text);
-            document.getElementById(loadId).innerText = response.toString();
+            const aiText = response.toString();
+            document.getElementById(loadId).innerText = aiText;
+            speak(aiText); // KYROS TI RISPONDE A VOCE
         } catch (e) {
-            document.getElementById(loadId).innerText = "Errore di connessione al nucleo.";
+            document.getElementById(loadId).innerText = "Errore di connessione.";
         }
         windowChat.scrollTop = windowChat.scrollHeight;
+    }
+
+    function addAiMessage(text) {
+        windowChat.innerHTML += `<div class="msg ai">${text}</div>`;
+        windowChat.scrollTop = windowChat.scrollHeight;
+        speak(text);
+    }
+
+    function handleCommands(text) {
+        if (text === "/manutenzione") {
+            isMaintenance = !isMaintenance;
+            localStorage.setItem('kyros_maintenance', isMaintenance);
+            addAiMessage(`Manutenzione: ${isMaintenance ? 'Attivata' : 'Disattivata'}`);
+            initInterface();
+        } else if (text === "/accountlist") {
+            let users = JSON.parse(localStorage.getItem('kyros_users')) || {};
+            let list = "<b>Utenti:</b><br>" + Object.keys(users).join("<br>");
+            addAiMessage(list);
+        }
+    }
+
+    // LOGICA MICROFONO
+    if (recognition) {
+        voiceBtn.addEventListener('click', () => {
+            recognition.start();
+            voiceBtn.classList.add('active');
+        });
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            input.value = transcript;
+            voiceBtn.classList.remove('active');
+            askKyros(); // Invia subito dopo aver parlato
+        };
+
+        recognition.onerror = () => voiceBtn.classList.remove('active');
+        recognition.onend = () => voiceBtn.classList.remove('active');
+    } else {
+        voiceBtn.style.display = 'none';
+    }
+
+    function newChat() {
+        windowChat.innerHTML = `<div class="msg ai">Conversazione resettata.</div>`;
+        window.speechSynthesis.cancel(); // Ferma la voce se sta parlando
     }
 
     initInterface();
