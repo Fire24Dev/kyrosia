@@ -1,67 +1,112 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KyrosIA - Il Futuro</title>
+    <title>KyrosIA - Evolution</title>
     <script src="https://js.puter.com/v2/"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #030712;
-            --panel: rgba(17, 24, 39, 0.8);
+            --bg: #050810;
+            --panel: rgba(13, 18, 30, 0.75);
             --accent: #00d2ff;
-            --accent-glow: rgba(0, 210, 255, 0.3);
-            --text: #f1f5f9;
+            --accent-glow: rgba(0, 210, 255, 0.4);
+            --text: #ffffff;
+            --text-dim: #94a3b8;
             --owner-color: #ff0077;
+            --glass-border: rgba(255, 255, 255, 0.08);
         }
 
-        * { box-sizing: border-box; }
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+        }
 
         body { 
-            font-family: 'Inter', sans-serif;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             background: var(--bg);
-            background-image: radial-gradient(circle at 50% -20%, #1e293b, #030712);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 210, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(255, 0, 119, 0.05) 0%, transparent 40%);
             color: var(--text);
             margin: 0;
-            height: 100vh;
+            height: 100dvh; /* Dynamic viewport height per mobile */
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
+        /* HEADER FIGO */
         header { 
-            padding: 20px;
-            text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            z-index: 10;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(5, 8, 16, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 100;
         }
-        h1 { 
+
+        .brand h1 { 
             margin: 0; 
-            font-size: 1.8rem; 
-            letter-spacing: 6px; 
+            font-size: 1.2rem; 
+            font-weight: 800;
+            letter-spacing: 2px; 
             background: linear-gradient(to right, #00d2ff, #3a86ff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
         }
-        .status { font-size: 0.65rem; color: var(--accent); opacity: 0.8; margin-top: 5px; text-transform: uppercase; letter-spacing: 2px; }
 
+        .status { 
+            font-size: 0.6rem; 
+            font-weight: 600;
+            color: var(--accent); 
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* BOTTONE NUOVA CHAT */
+        .new-chat-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text);
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .new-chat-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+
+        /* AREA CHAT */
         #chat-window { 
             flex: 1;
             overflow-y: auto;
             padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px;
+            scroll-behavior: smooth;
         }
 
+        /* BOLLE MESSAGGI */
         .msg { 
             max-width: 85%;
-            padding: 14px 18px;
-            border-radius: 18px;
-            font-size: 1rem;
-            line-height: 1.5;
-            animation: emerge 0.4s ease;
+            padding: 12px 16px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            animation: emerge 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            word-wrap: break-word;
         }
 
         .user { 
@@ -69,64 +114,107 @@
             background: linear-gradient(135deg, #00d2ff, #3a86ff);
             color: #fff;
             border-bottom-right-radius: 4px;
+            box-shadow: 0 10px 20px -10px var(--accent-glow);
         }
 
         .user.owner-msg {
             background: linear-gradient(135deg, var(--owner-color), #ff4b2b);
-            box-shadow: 0 4px 15px rgba(255, 0, 119, 0.3);
+            box-shadow: 0 10px 20px -10px rgba(255, 0, 119, 0.4);
         }
 
         .ai { 
             align-self: flex-start;
             background: var(--panel);
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid var(--glass-border);
             border-bottom-left-radius: 4px;
+            color: #e2e8f0;
+        }
+
+        /* INPUT AREA FLUTTUANTE */
+        .input-wrapper {
+            padding: 15px 20px 30px 20px;
+            background: linear-gradient(to top, var(--bg) 80%, transparent);
         }
 
         .input-container {
-            padding: 20px;
-            background: rgba(15, 23, 42, 0.9);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            padding: 8px;
+            border-radius: 18px;
             display: flex;
-            gap: 10px;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
 
         input { 
             flex: 1;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: transparent;
+            border: none;
             color: white;
-            padding: 14px;
-            border-radius: 12px;
+            padding: 10px 15px;
             outline: none;
+            font-size: 1rem;
+            font-family: inherit;
         }
 
-        button { 
+        button#sendBtn { 
             background: var(--accent);
             color: #030712;
             border: none;
-            padding: 14px 24px;
-            border-radius: 12px;
+            width: 45px;
+            height: 45px;
+            border-radius: 14px;
             cursor: pointer;
-            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
         }
 
-        @keyframes emerge { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        button#sendBtn:active { transform: scale(0.9); }
+
+        /* SCROLLBAR */
+        #chat-window::-webkit-scrollbar { width: 4px; }
+        #chat-window::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+        @keyframes emerge { 
+            from { opacity: 0; transform: translateY(15px) scale(0.95); } 
+            to { opacity: 1; transform: translateY(0) scale(1); } 
+        }
+
+        /* ADATTAMENTO PC */
+        @media (min-width: 768px) {
+            #chat-window, .input-wrapper {
+                max-width: 800px;
+                margin: 0 auto;
+                width: 100%;
+            }
+            .msg { max-width: 70%; }
+        }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>KYROS IA</h1>
-    <div class="status" id="system-status">SISTEMA ONLINE</div>
+    <div class="brand">
+        <h1>KYROS IA</h1>
+        <div class="status" id="system-status">SISTEMA ONLINE</div>
+    </div>
+    <button class="new-chat-btn" onclick="newChat()">NUOVA CHAT</button>
 </header>
 
 <div id="chat-window">
-    <div class="msg ai" id="welcome-msg">Bentornato. Sono KyrosIA. Come posso aiutarti oggi?</div>
+    <div class="msg ai" id="welcome-msg">Benvenuto. Sono il nucleo KyrosIA. In cosa posso supportarti?</div>
 </div>
 
-<div class="input-container">
-    <input type="text" id="userInput" placeholder="Scrivi qui..." autocomplete="off">
-    <button id="sendBtn">INVIA</button>
+<div class="input-wrapper">
+    <div class="input-container">
+        <input type="text" id="userInput" placeholder="Digita un messaggio..." autocomplete="off">
+        <button id="sendBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
+    </div>
 </div>
 
 <script>
@@ -138,16 +226,22 @@
     const currentUser = sessionStorage.getItem('kyros_session') || "Ospite";
     const currentRole = sessionStorage.getItem('kyros_role') || "User";
 
-    // Controllo Stato Manutenzione all'avvio
     let isMaintenance = localStorage.getItem('kyros_maintenance') === 'true';
 
-    if (currentRole === "Owner") {
-        statusLabel.innerText = "CONTROLLO PROPRIETARIO: firethesuper";
-        statusLabel.style.color = "var(--owner-color)";
-    } else if (isMaintenance) {
-        statusLabel.innerText = "MODALIT� MANUTENZIONE";
-        statusLabel.style.color = "#ff4444";
-        document.getElementById('welcome-msg').innerText = "KyrosIA - Manutenzione.";
+    function initInterface() {
+        if (currentRole === "Owner") {
+            statusLabel.innerText = "OWNER: firethesuper";
+            statusLabel.style.color = "var(--owner-color)";
+        } else if (isMaintenance) {
+            statusLabel.innerText = "MANUTENZIONE";
+            statusLabel.style.color = "#ff4444";
+            document.getElementById('welcome-msg').innerText = "KyrosIA - Sistemi in manutenzione.";
+        }
+    }
+
+    // FUNZIONE NUOVA CHAT
+    function newChat() {
+        windowChat.innerHTML = `<div class="msg ai">Memoria locale pulita. Conversazione resettata.</div>`;
     }
 
     async function askKyros() {
@@ -159,28 +253,24 @@
         input.value = '';
         windowChat.scrollTop = windowChat.scrollHeight;
 
-        // --- COMANDI OWNER ---
         if (text.startsWith("/")) {
             if (currentRole !== "Owner") {
-                windowChat.innerHTML += `<div class="msg ai">Accesso negato. Solo firethesuper pu� usare i comandi.</div>`;
+                windowChat.innerHTML += `<div class="msg ai">Permessi insufficienti.</div>`;
                 return;
             }
 
-            // COMANDO /manutenzione
             if (text.toLowerCase() === "/manutenzione") {
                 isMaintenance = !isMaintenance;
                 localStorage.setItem('kyros_maintenance', isMaintenance);
-                const status = isMaintenance ? "ATTIVATA" : "DISATTIVATA";
-                windowChat.innerHTML += `<div class="msg ai" style="border-left: 3px solid var(--owner-color);"> Manutenzione ${status}.</div>`;
-                statusLabel.innerText = isMaintenance ? "MODALIT� MANUTENZIONE" : "CONTROLLO PROPRIETARIO: firethesuper";
-                statusLabel.style.color = isMaintenance ? "#ff4444" : "var(--owner-color)";
+                windowChat.innerHTML += `<div class="msg ai">Stato manutenzione: ${isMaintenance ? 'ON' : 'OFF'}</div>`;
+                initInterface();
                 return;
             }
 
             if (text.toLowerCase() === "/accountlist") {
                 let users = JSON.parse(localStorage.getItem('kyros_users')) || {};
-                let list = "<b>Lista Utenti:</b><br>";
-                for (let u in users) list += ` ${u} (Pass: ${users[u]})<br>`;
+                let list = "<b>Database Utenti:</b><br>";
+                for (let u in users) list += `● ${u}<br>`;
                 windowChat.innerHTML += `<div class="msg ai">${list}</div>`;
             } else if (text.startsWith("/ban ")) {
                 const target = text.replace("/ban ", "").trim();
@@ -188,41 +278,36 @@
                 if (users[target]) {
                     delete users[target];
                     localStorage.setItem('kyros_users', JSON.stringify(users));
-                    windowChat.innerHTML += `<div class="msg ai">Utente <b>${target}</b> eliminato.</div>`;
-                } else {
-                    windowChat.innerHTML += `<div class="msg ai">Utente non trovato.</div>`;
+                    windowChat.innerHTML += `<div class="msg ai">Soggetto <b>${target}</b> terminato.</div>`;
                 }
             }
             windowChat.scrollTop = windowChat.scrollHeight;
             return;
         }
 
-        // --- BLOCCO MANUTENZIONE PER UTENTI ---
         if (isMaintenance && currentRole !== "Owner") {
-            windowChat.innerHTML += `<div class="msg ai">KyrosIA � in manutenzione.</div>`;
+            windowChat.innerHTML += `<div class="msg ai">KyrosIA è attualmente in manutenzione. Riprova più tardi.</div>`;
             windowChat.scrollTop = windowChat.scrollHeight;
             return;
         }
 
-        // --- RISPOSTA IA ---
         const loadId = "id-" + Date.now();
-        windowChat.innerHTML += `<div class="msg ai" id="${loadId}">...</div>`;
+        windowChat.innerHTML += `<div class="msg ai" id="${loadId}"><span style="opacity:0.5">Elaborazione...</span></div>`;
         windowChat.scrollTop = windowChat.scrollHeight;
 
         try {
-            let prompt = "Sei KyrosIA, amichevole e professionale. ";
-            if (currentRole === "Owner") {
-                prompt += "Parli con firethesuper, il tuo creatore. ";
-            }
+            let prompt = "Sei KyrosIA, un'IA evoluta. Rispondi in italiano. ";
+            if (currentRole === "Owner") prompt += "Utente autorizzato: firethesuper. ";
             
             const response = await puter.ai.chat(prompt + text);
             document.getElementById(loadId).innerText = response.toString();
         } catch (e) {
-            document.getElementById(loadId).innerText = "Errore di connessione.";
+            document.getElementById(loadId).innerText = "Errore di connessione al nucleo.";
         }
         windowChat.scrollTop = windowChat.scrollHeight;
     }
 
+    initInterface();
     btn.addEventListener('click', askKyros);
     input.addEventListener('keypress', (e) => { if (e.key === 'Enter') askKyros(); });
 </script>
