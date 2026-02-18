@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KyrosIA - Inizializzazione...</title>
+    <style>
+        :root {
+            --bg: #020617;
+            --accent: #00d2ff;
+        }
+
+        body {
+            background-color: var(--bg);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            color: white;
+        }
+
+        /* Il cerchio di caricamento */
+        .loader {
+            width: 100px;
+            height: 100px;
+            border: 3px solid rgba(0, 210, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s ease-in-out infinite;
+            filter: drop-shadow(0 0 15px var(--accent));
+            margin-bottom: 20px;
+        }
+
+        /* Titolo con effetto pulsante */
+        h1 {
+            letter-spacing: 8px;
+            font-weight: 300;
+            margin: 0;
+            background: linear-gradient(to right, #00d2ff, #3a86ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: pulse 2s infinite;
+        }
+
+        .status-text {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-top: 15px;
+            opacity: 0.6;
+        }
+
+        /* Barra di progresso */
+        .progress-container {
+            width: 200px;
+            height: 2px;
+            background: rgba(255,255,255,0.1);
+            margin-top: 30px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+            animation: progressMove 3.5s forwards;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(0.98); }
+        }
+
+        @keyframes progressMove {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        /* Effetto dissolvenza finale */
+        .fade-out {
+            animation: fadeOut 0.5s forwards;
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="loader"></div>
+    <h1>KYROS IA</h1>
+    <div class="status-text" id="status">Inizializzazione Sistemi...</div>
+    
+    <div class="progress-container">
+        <div class="progress-bar"></div>
+    </div>
+
+    <script>
+        // Lista dei messaggi di caricamento per renderlo più figo
+        const messages = [
+            "Connessione ai nuclei...",
+            "Caricamento onniscienza...",
+            "Sincronizzazione dati...",
+            "Accesso KyrosIA autorizzato"
+        ];
+        
+        let i = 0;
+        const statusElement = document.getElementById('status');
+        
+        // Cambia il testo ogni 800ms
+        const interval = setInterval(() => {
+            if (i < messages.length) {
+                statusElement.innerText = messages[i];
+                i++;
+            } else {
+                clearInterval(interval);
+            }
+        }, 800);
+
+        // Reindirizzamento automatico dopo 4 secondi
+        setTimeout(() => {
+            document.body.classList.add('fade-out'); // Effetto dissolvenza prima di cambiare
+            setTimeout(() => {
+                window.location.href = "kyros.html"; // ASSICURATI CHE IL FILE SI CHIAMI ESATTAMENTE COSI
+            }, 500);
+        }, 4000);
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KyrosIA - Il Futuro</title>
+    <script src="https://js.puter.com/v2/"></script>
+    <style>
+        :root {
+            --bg: #030712;
+            --panel: rgba(17, 24, 39, 0.8);
+            --accent: #00d2ff;
+            --accent-glow: rgba(0, 210, 255, 0.3);
+            --text: #f1f5f9;
+            --owner-color: #ff0077;
+        }
+
+        * { box-sizing: border-box; }
+
+        body { 
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            background-image: radial-gradient(circle at 50% -20%, #1e293b, #030712);
+            color: var(--text);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header { 
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+        h1 { 
+            margin: 0; 
+            font-size: 1.8rem; 
+            letter-spacing: 6px; 
+            background: linear-gradient(to right, #00d2ff, #3a86ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .status { font-size: 0.65rem; color: var(--accent); opacity: 0.8; margin-top: 5px; text-transform: uppercase; letter-spacing: 2px; }
+
+        #chat-window { 
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .msg { 
+            max-width: 85%;
+            padding: 14px 18px;
+            border-radius: 18px;
+            font-size: 1rem;
+            line-height: 1.5;
+            animation: emerge 0.4s ease;
+        }
+
+        .user { 
+            align-self: flex-end;
+            background: linear-gradient(135deg, #00d2ff, #3a86ff);
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+
+        .user.owner-msg {
+            background: linear-gradient(135deg, var(--owner-color), #ff4b2b);
+            box-shadow: 0 4px 15px rgba(255, 0, 119, 0.3);
+        }
+
+        .ai { 
+            align-self: flex-start;
+            background: var(--panel);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-bottom-left-radius: 4px;
+        }
+
+        .input-container {
+            padding: 20px;
+            background: rgba(15, 23, 42, 0.9);
+            display: flex;
+            gap: 10px;
+        }
+
+        input { 
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 14px;
+            border-radius: 12px;
+            outline: none;
+        }
+
+        button { 
+            background: var(--accent);
+            color: #030712;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        @keyframes emerge { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>KYROS IA</h1>
+    <div class="status" id="system-status">SISTEMA ONLINE</div>
+</header>
+
+<div id="chat-window">
+    <div class="msg ai">Bentornato. Sono KyrosIA. Come posso aiutarti oggi?</div>
+</div>
+
+<div class="input-container">
+    <input type="text" id="userInput" placeholder="Scrivi qui..." autocomplete="off">
+    <button id="sendBtn">INVIA</button>
+</div>
+
+<script>
+    const input = document.getElementById('userInput');
+    const btn = document.getElementById('sendBtn');
+    const windowChat = document.getElementById('chat-window');
+    const statusLabel = document.getElementById('system-status');
+
+    const currentUser = sessionStorage.getItem('kyros_session') || "Ospite";
+    const currentRole = sessionStorage.getItem('kyros_role') || "User";
+
+    if (currentRole === "Owner") {
+        statusLabel.innerText = "CONTROLLO PROPRIETARIO: firethesuper";
+        statusLabel.style.color = "var(--owner-color)";
+    }
+
+    async function askKyros() {
+        const text = input.value.trim();
+        if (!text) return;
+
+        const ownerClass = (currentRole === "Owner") ? "owner-msg" : "";
+        windowChat.innerHTML += `<div class="msg user ${ownerClass}">${text}</div>`;
+        input.value = '';
+        windowChat.scrollTop = windowChat.scrollHeight;
+
+        // --- COMANDI OWNER ---
+        if (text.startsWith("/")) {
+            if (currentRole !== "Owner") {
+                windowChat.innerHTML += `<div class="msg ai">Accesso negato. Solo il proprietario può usare i comandi di sistema.</div>`;
+                return;
+            }
+            if (text.toLowerCase() === "/accountlist") {
+                let users = JSON.parse(localStorage.getItem('kyros_users')) || {};
+                let list = "<b>Lista Utenti:</b><br>";
+                for (let u in users) list += `👤 ${u} (Pass: ${users[u]})<br>`;
+                windowChat.innerHTML += `<div class="msg ai">${list}</div>`;
+            } else if (text.startsWith("/ban ")) {
+                const target = text.replace("/ban ", "").trim();
+                let users = JSON.parse(localStorage.getItem('kyros_users')) || {};
+                if (users[target]) {
+                    delete users[target];
+                    localStorage.setItem('kyros_users', JSON.stringify(users));
+                    windowChat.innerHTML += `<div class="msg ai">Utente <b>${target}</b> eliminato dal sistema.</div>`;
+                } else {
+                    windowChat.innerHTML += `<div class="msg ai">Utente non trovato.</div>`;
+                }
+            }
+            windowChat.scrollTop = windowChat.scrollHeight;
+            return;
+        }
+
+        // --- RISPOSTA IA ---
+        const loadId = "id-" + Date.now();
+        windowChat.innerHTML += `<div class="msg ai" id="${loadId}">...</div>`;
+        windowChat.scrollTop = windowChat.scrollHeight;
+
+        try {
+            // Prompt migliorato per parlare in modo naturale
+            let prompt = "Sei KyrosIA, un'intelligenza artificiale avanzata, amichevole ma professionale. Parla in italiano in modo fluido e naturale. ";
+            if (currentRole === "Owner") {
+                prompt += "Stai parlando con il tuo creatore, firethesuper. Sii collaborativa al massimo. ";
+            }
+            
+            const response = await puter.ai.chat(prompt + "L'utente dice: " + text);
+            document.getElementById(loadId).innerText = response.toString();
+        } catch (e) {
+            document.getElementById(loadId).innerText = "C'è stato un piccolo errore di connessione. Riprova!";
+        }
+        windowChat.scrollTop = windowChat.scrollHeight;
+    }
+
+    btn.addEventListener('click', askKyros);
+    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') askKyros(); });
+</script>
+
+</body>
+</html>
