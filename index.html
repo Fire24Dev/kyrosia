@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;600;800&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     
     <style>
         :root { 
@@ -64,6 +65,19 @@
         }
         button:hover { background: var(--accent); transform: translateY(-2px); }
 
+        /* Overlay Codice di Verifica */
+        #verify-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); backdrop-filter: blur(15px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+        }
+
+        .verify-card {
+            background: #0a1120; padding: 40px; border-radius: 32px; border: 1px solid rgba(0, 242, 255, 0.3);
+            text-align: center; max-width: 350px; width: 85%;
+            box-shadow: 0 0 50px rgba(0, 242, 255, 0.1);
+        }
+
         #error-box {
             background: rgba(255, 75, 75, 0.1); color: #ff4b4b;
             padding: 12px; border-radius: 12px; font-size: 0.85rem;
@@ -84,6 +98,7 @@
         </div>
         <div id="error-box"></div>
         
+        <div class="form-group" id="username-group" style="display:none;"><input type="text" id="username" placeholder="Identificativo / Nickname" autocomplete="off"></div>
         <div class="form-group"><input type="email" id="email" placeholder="Indirizzo Email" autocomplete="off"></div>
         <div class="form-group"><input type="password" id="password" placeholder="Access Key"></div>
         
@@ -94,72 +109,115 @@
         </div>
     </div>
 
+    <div id="verify-overlay">
+        <div class="verify-card">
+            <h2 style="margin-bottom: 10px; color: #fff;">Verifica Nucleo</h2>
+            <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 25px;">Inserisci il codice trasmesso alla tua email per finalizzare l'identità.</p>
+            <input type="text" id="verify-code-input" placeholder="------" maxlength="6" style="text-align: center; font-size: 1.5rem; letter-spacing: 8px; margin-bottom: 20px; border-color: var(--accent);">
+            <button onclick="confirmRegistration()" style="background: var(--accent);">Verifica Codice</button>
+            <p onclick="location.reload()" style="margin-top: 20px; font-size: 0.75rem; cursor: pointer; opacity: 0.6;">Annulla</p>
+        </div>
+    </div>
+
     <script>
+        // INIZIALIZZAZIONE EMAILJS
+        (function(){
+            emailjs.init("TayTydvJKxPtEyu-W"); 
+        })();
+
         // CONFIGURAZIONE SUPABASE
         const SUPABASE_URL = "https://tbrqshnlkbgbkpjpazhs.supabase.co";
-        const SUPABASE_ANON_KEY = "sb_publishable_Hn02-0fF_zWw-4KTM2BBuw_FJcbkZXXXXXXXXXX";
+        const SUPABASE_ANON_KEY = "INSERISCI_QUI_LA_TUA_CHIAVE_PUBBLICA_INTERA"; 
 
-        // Corretto il conflitto di nomi cambiando il nome della costante in supabaseClient
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let isLogin = true;
+        let generatedCode = null;
+        let pendingUser = {};
 
         function toggleMode() {
             isLogin = !isLogin;
+            document.getElementById('username-group').style.display = isLogin ? 'none' : 'block';
             document.getElementById('status-tag').innerText = isLogin ? "SECURITY PROTOCOL" : "NEW REGISTRATION";
-            document.getElementById('action-btn').innerText = isLogin ? "Accedi" : "Registrati";
+            document.getElementById('action-btn').innerText = isLogin ? "Accedi" : "Invia Codice";
             document.getElementById('toggle-container').innerHTML = isLogin ? 
                 'Nuova unità? <span onclick="toggleMode()">Registrati</span>' : 
                 'Hai già un account? <span onclick="toggleMode()">Accedi</span>';
         }
 
         async function handleAction() {
+            const nickname = document.getElementById('username').value.trim();
             const email = document.getElementById('email').value.trim();
             const pass = document.getElementById('password').value.trim();
             const btn = document.getElementById('action-btn');
 
-            if (!email || !pass) {
-                return showError("Tutti i campi sono richiesti.");
-            }
-
-            btn.disabled = true;
-
             if (isLogin) {
+                if (!email || !pass) return showError("Tutti i campi sono richiesti.");
+                btn.disabled = true;
                 btn.innerText = "VERIFICA IN CORSO...";
                 
-                // Utilizzo del client rinominato
                 const { data, error } = await supabaseClient.auth.signInWithPassword({
                     email: email,
                     password: pass,
                 });
 
                 if (error) {
-                    showError("Accesso negato: credenziali errate o non verificate.");
+                    showError("Accesso negato: credenziali errate.");
                     btn.innerText = "Accedi";
                     btn.disabled = false;
                 } else {
                     sessionStorage.setItem('kyros_session', data.user.email);
-                    
                     btn.innerText = "AUTORIZZATO...";
                     setTimeout(() => { window.location.href = "loading.html"; }, 800);
                 }
             } else {
-                btn.innerText = "CREAZIONE IN CORSO...";
-                
-                // Utilizzo del client rinominato
+                // FASE 1 REGISTRAZIONE: Controllo parametri e invio codice email
+                if (!nickname || !email || !pass) return showError("Tutti i parametri sono richiesti.");
+                btn.disabled = true;
+                btn.innerText = "TRASMISSIONE...";
+
+                generatedCode = Math.floor(100000 + Math.random() * 900000);
+                pendingUser = { nickname, email, pass };
+
+                emailjs.send("service_1l3bjmp", "template_iu9qkk5", {
+                    to_email: email,
+                    code: generatedCode,
+                    user_name: nickname
+                }).then(() => {
+                    document.getElementById('verify-overlay').style.display = 'flex';
+                }, (err) => {
+                    showError("Errore di rete nell'invio dell'email.");
+                    btn.innerText = "Invia Codice";
+                    btn.disabled = false;
+                });
+            }
+        }
+
+        // FASE 2 REGISTRAZIONE: L'utente inserisce il codice e i dati vengono scritti su Supabase
+        async function confirmRegistration() {
+            const inputCode = document.getElementById('verify-code-input').value.trim();
+            
+            if (inputCode == generatedCode) {
+                // Il codice è corretto, ora creiamo l'utente sul database sicuro
                 const { data, error } = await supabaseClient.auth.signUp({
-                    email: email,
-                    password: pass,
+                    email: pendingUser.email,
+                    password: pendingUser.pass,
+                    options: {
+                        // Salviamo il nickname nei metadati dell'utente
+                        data: {
+                            nickname: pendingUser.nickname
+                        }
+                    }
                 });
 
                 if (error) {
-                    showError("Errore durante la registrazione: " + error.message);
-                    btn.innerText = "Registrati";
-                    btn.disabled = false;
+                    alert("Errore durante la scrittura nel database: " + error.message);
                 } else {
-                    alert("Registrazione effettuata! Controlla la tua email per confermare l'account prima di accedere.");
+                    alert("Identità Verificata e salvata nel database. Benvenuto nel nucleo.");
                     location.reload();
                 }
+            } else {
+                alert("Codice non valido. Accesso negato.");
             }
         }
 
