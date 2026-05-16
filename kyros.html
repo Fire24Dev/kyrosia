@@ -12,9 +12,9 @@
             --panel: rgba(13, 18, 30, 0.75);
             --accent: #00d2ff;
             --text: #ffffff;
-            --owner-color: #ff0000;      /* Cambiato in Rosso */
-            --admin-color: #ffaa00;      /* Aggiunto Arancione */
-            --user-color: #00d2ff;       /* Aggiunto Azzurro */
+            --owner-color: #ff0000;
+            --admin-color: #ffaa00;
+            --user-color: #00d2ff;
             --glass-border: rgba(255, 255, 255, 0.08);
             --danger: #ff4b4b;
             --success: #00ff88;
@@ -123,7 +123,6 @@
         text += currentNick;
         statusLabel.innerText = text;
 
-        // Se è attivo l'offline, aggiunge lo span rosso scuro alla fine
         if(isMaintenance) {
             statusLabel.innerHTML += ' <span style="color: #8b0000; font-weight: 900;">[OFFLINE]</span>';
         }
@@ -195,12 +194,11 @@
 
     function getStatusColor(s) { return s === 'risolto' ? 'var(--success)' : s === 'rifiutato' ? 'var(--danger)' : 'var(--accent)'; }
 
-    // --- FUNZIONE PARSER MARKDOWN ---
     function parseMarkdown(text) {
         return text
-            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') // Grassetto doppio asterisco
-            .replace(/\*(.*?)\*/g, '<b>$1</b>')     // Grassetto singolo asterisco
-            .replace(/\n/g, '<br>');                // Vai a capo
+            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+            .replace(/\*(.*?)\*/g, '<b>$1</b>')     
+            .replace(/\n/g, '<br>');                
     }
 
     async function handleSend() {
@@ -240,7 +238,6 @@
             const data = await resp.json();
             const aiResponse = data.choices[0].message.content;
             
-            // Applica il parser Markdown solo alle parti con asterischi
             document.getElementById(tid).innerHTML = parseMarkdown(aiResponse);
         } catch (e) {
             document.getElementById(tid).innerText = "Errore critico di rete.";
@@ -293,7 +290,6 @@
         chatWin.scrollTop = chatWin.scrollHeight;
     }
 
-    // Corretto bug di sovrapposizione logout
     function logout() { sessionStorage.clear(); window.location.href = "index.html"; }
     input.onkeypress = (e) => { if(e.key === 'Enter') handleSend(); };
     init();
