@@ -12,7 +12,9 @@
             --panel: rgba(13, 18, 30, 0.75);
             --accent: #00d2ff;
             --text: #ffffff;
-            --owner-color: #ff0077;
+            --owner-color: #ff0000;      /* Cambiato in Rosso */
+            --admin-color: #ffaa00;      /* Aggiunto Arancione */
+            --user-color: #00d2ff;       /* Aggiunto Azzurro */
             --glass-border: rgba(255, 255, 255, 0.08);
             --danger: #ff4b4b;
             --success: #00ff88;
@@ -21,7 +23,7 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); margin: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
         header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(5, 8, 16, 0.8); border-bottom: 1px solid var(--glass-border); z-index: 10; gap: 10px; }
-        .status { font-size: 0.7rem; font-weight: 800; color: var(--accent); letter-spacing: 1px; flex: 1; }
+        .status { font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; flex: 1; }
 
         #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
         
@@ -29,7 +31,7 @@
         .msg b { font-weight: 800; color: #fff; }
 
         .user { align-self: flex-end; background: linear-gradient(135deg, #00d2ff, #3a86ff); color: white; border-bottom-right-radius: 4px; }
-        .user.owner-msg { background: linear-gradient(135deg, var(--owner-color), #ff4b2b); box-shadow: 0 5px 15px rgba(255, 0, 119, 0.3); }
+        .user.owner-msg { background: linear-gradient(135deg, var(--owner-color), #ff4b2b); box-shadow: 0 5px 15px rgba(255, 0, 0, 0.3); }
         .ai { align-self: flex-start; background: var(--panel); border: 1px solid var(--glass-border); border-bottom-left-radius: 4px; padding-bottom: 35px; }
 
         .msg-actions { position: absolute; bottom: 5px; right: 10px; display: flex; gap: 8px; opacity: 0.6; transition: 0.3s; }
@@ -109,15 +111,22 @@
         let text = "";
         if (userRole === "Owner") {
             text = "OWNER: ";
+            statusLabel.style.color = "var(--owner-color)";
         } else if (userRole === "Admin") {
             text = "ADMIN: ";
+            statusLabel.style.color = "var(--admin-color)";
         } else {
             text = "UTENTE: ";
+            statusLabel.style.color = "var(--user-color)";
         }
+        
         text += currentNick;
-        if(isMaintenance) text += " [OFFLINE]";
         statusLabel.innerText = text;
-        if(userRole === "Owner") statusLabel.style.color = "var(--owner-color)";
+
+        // Se è attivo l'offline, aggiunge lo span rosso scuro alla fine
+        if(isMaintenance) {
+            statusLabel.innerHTML += ' <span style="color: #8b0000; font-weight: 900;">[OFFLINE]</span>';
+        }
     }
 
     function copyText(btn, textId) {
@@ -284,6 +293,7 @@
         chatWin.scrollTop = chatWin.scrollHeight;
     }
 
+    // Corretto bug di sovrapposizione logout
     function logout() { sessionStorage.clear(); window.location.href = "index.html"; }
     input.onkeypress = (e) => { if(e.key === 'Enter') handleSend(); };
     init();
