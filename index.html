@@ -96,12 +96,11 @@
 
     <script>
         // CONFIGURAZIONE SUPABASE
-        // Sostituisci queste due stringhe con i dati del tuo progetto Supabase!
         const SUPABASE_URL = "https://tbrqshnlkbgbkpjpazhs.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_Hn02-0fF_zWw-4KTM2BBuw_FJcbkZXXXXXXXXXX";
 
-        // Inizializzazione del client Supabase
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Corretto il conflitto di nomi cambiando il nome della costante in supabaseClient
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let isLogin = true;
 
@@ -128,8 +127,8 @@
             if (isLogin) {
                 btn.innerText = "VERIFICA IN CORSO...";
                 
-                // Richiesta di Login sicura a Supabase
-                const { data, error } = await supabase.auth.signInWithPassword({
+                // Utilizzo del client rinominato
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
                     email: email,
                     password: pass,
                 });
@@ -139,7 +138,6 @@
                     btn.innerText = "Accedi";
                     btn.disabled = false;
                 } else {
-                    // Salviamo i dati della sessione in modo sicuro (solo per la durata della scheda del browser)
                     sessionStorage.setItem('kyros_session', data.user.email);
                     
                     btn.innerText = "AUTORIZZATO...";
@@ -148,8 +146,8 @@
             } else {
                 btn.innerText = "CREAZIONE IN CORSO...";
                 
-                // Richiesta di Registrazione sicura a Supabase
-                const { data, error } = await supabase.auth.signUp({
+                // Utilizzo del client rinominato
+                const { data, error } = await supabaseClient.auth.signUp({
                     email: email,
                     password: pass,
                 });
