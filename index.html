@@ -163,13 +163,16 @@
                     btn.innerText = "Accedi";
                     btn.disabled = false;
                 } else {
-                    // CONTROLLO RUOLO TRAMITE IL TUO USER UID DI SUPABASE
+                    // CONTROLLO RUOLI TRAMITE GLI USER UID DI SUPABASE
                     const userUID = data.user.id;
                     const OWNER_UID = "92ea00e8-2f52-4154-98d8-ad681826ea8c";
+                    const ADMIN_UID = "INSERISCI_QUI_L_ID_DEL_TUO_ADMIN";
 
-                    // Salvataggio preciso con la "O" maiuscola per Kyros.html
+                    // Assegnazione del ruolo corrispondente per kyros.html
                     if (userUID === OWNER_UID) {
                         sessionStorage.setItem('kyros_role', 'Owner');
+                    } else if (userUID === ADMIN_UID) {
+                        sessionStorage.setItem('kyros_role', 'Admin');
                     } else {
                         sessionStorage.setItem('kyros_role', 'User');
                     }
