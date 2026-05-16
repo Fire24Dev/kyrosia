@@ -98,7 +98,6 @@
         </div>
         <div id="error-box"></div>
         
-        <div class="form-group" id="username-group" style="display:none;"><input type="text" id="username" placeholder="Identificativo / Nickname" autocomplete="off"></div>
         <div class="form-group"><input type="email" id="email" placeholder="Indirizzo Email" autocomplete="off"></div>
         <div class="form-group"><input type="password" id="password" placeholder="Access Key"></div>
         
@@ -137,7 +136,6 @@
 
         function toggleMode() {
             isLogin = !isLogin;
-            document.getElementById('username-group').style.display = isLogin ? 'none' : 'block';
             document.getElementById('status-tag').innerText = isLogin ? "SECURITY PROTOCOL" : "NEW REGISTRATION";
             document.getElementById('action-btn').innerText = isLogin ? "Accedi" : "Invia Codice";
             document.getElementById('toggle-container').innerHTML = isLogin ? 
@@ -146,7 +144,6 @@
         }
 
         async function handleAction() {
-            const nickname = document.getElementById('username').value.trim();
             const email = document.getElementById('email').value.trim();
             const pass = document.getElementById('password').value.trim();
             const btn = document.getElementById('action-btn');
@@ -166,23 +163,33 @@
                     btn.innerText = "Accedi";
                     btn.disabled = false;
                 } else {
+                    // Controllo del Ruolo tramite UID dell'utente
+                    const userUID = data.user.id;
+                    const OWNER_UID = "92ea00e8-2f52-4154-98d8-ad681826ea8c";
+
+                    if (userUID === OWNER_UID) {
+                        sessionStorage.setItem('kyros_role', 'owner');
+                    } else {
+                        sessionStorage.setItem('kyros_role', 'user');
+                    }
+
                     sessionStorage.setItem('kyros_session', data.user.email);
                     btn.innerText = "AUTORIZZATO...";
                     setTimeout(() => { window.location.href = "loading.html"; }, 800);
                 }
             } else {
                 // FASE 1 REGISTRAZIONE: Controllo parametri e invio codice email
-                if (!nickname || !email || !pass) return showError("Tutti i parametri sono richiesti.");
+                if (!email || !pass) return showError("Tutti i parametri sono richiesti.");
                 btn.disabled = true;
                 btn.innerText = "TRASMISSIONE...";
 
                 generatedCode = Math.floor(100000 + Math.random() * 900000);
-                pendingUser = { nickname, email, pass };
+                pendingUser = { email, pass };
 
                 emailjs.send("service_1l3bjmp", "template_iu9qkk5", {
                     to_email: email,
                     code: generatedCode,
-                    user_name: nickname
+                    user_name: email // Utilizza l'email come riferimento temporaneo nel template
                 }).then(() => {
                     document.getElementById('verify-overlay').style.display = 'flex';
                 }, (err) => {
@@ -198,16 +205,9 @@
             const inputCode = document.getElementById('verify-code-input').value.trim();
             
             if (inputCode == generatedCode) {
-                // Il codice è corretto, ora creiamo l'utente sul database sicuro
                 const { data, error } = await supabaseClient.auth.signUp({
                     email: pendingUser.email,
-                    password: pendingUser.pass,
-                    options: {
-                        // Salviamo il nickname nei metadati dell'utente
-                        data: {
-                            nickname: pendingUser.nickname
-                        }
-                    }
+                    password: pendingUser.pass
                 });
 
                 if (error) {
