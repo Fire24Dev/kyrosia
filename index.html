@@ -163,14 +163,15 @@
                     btn.innerText = "Accedi";
                     btn.disabled = false;
                 } else {
-                    // Controllo del Ruolo tramite UID dell'utente
+                    // CONTROLLO RUOLO TRAMITE IL TUO USER UID DI SUPABASE
                     const userUID = data.user.id;
                     const OWNER_UID = "92ea00e8-2f52-4154-98d8-ad681826ea8c";
 
+                    // Salvataggio preciso con la "O" maiuscola per Kyros.html
                     if (userUID === OWNER_UID) {
-                        sessionStorage.setItem('kyros_role', 'owner');
+                        sessionStorage.setItem('kyros_role', 'Owner');
                     } else {
-                        sessionStorage.setItem('kyros_role', 'user');
+                        sessionStorage.setItem('kyros_role', 'User');
                     }
 
                     sessionStorage.setItem('kyros_session', data.user.email);
@@ -189,7 +190,7 @@
                 emailjs.send("service_1l3bjmp", "template_iu9qkk5", {
                     to_email: email,
                     code: generatedCode,
-                    user_name: email // Utilizza l'email come riferimento temporaneo nel template
+                    user_name: email
                 }).then(() => {
                     document.getElementById('verify-overlay').style.display = 'flex';
                 }, (err) => {
@@ -200,7 +201,7 @@
             }
         }
 
-        // FASE 2 REGISTRAZIONE: L'utente inserisce il codice e i dati vengono scritti su Supabase
+        // FASE 2 REGISTRAZIONE: Scrittura finale dell'utente sul database sicuro
         async function confirmRegistration() {
             const inputCode = document.getElementById('verify-code-input').value.trim();
             
