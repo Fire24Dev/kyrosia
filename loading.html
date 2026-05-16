@@ -23,7 +23,6 @@
             color: white;
         }
 
-        /* Il cerchio di caricamento */
         .loader {
             width: 100px;
             height: 100px;
@@ -35,7 +34,6 @@
             margin-bottom: 20px;
         }
 
-        /* Titolo con effetto pulsante */
         h1 {
             letter-spacing: 8px;
             font-weight: 300;
@@ -54,7 +52,6 @@
             opacity: 0.6;
         }
 
-        /* Barra di progresso */
         .progress-container {
             width: 200px;
             height: 2px;
@@ -86,7 +83,6 @@
             100% { width: 100%; }
         }
 
-        /* Effetto dissolvenza finale */
         .fade-out {
             animation: fadeOut 0.5s forwards;
         }
@@ -108,7 +104,6 @@
     </div>
 
     <script>
-        // Lista dei messaggi di caricamento per renderlo più figo
         const messages = [
             "Connessione ai nuclei...",
             "Caricamento onniscienza...",
@@ -119,7 +114,6 @@
         let i = 0;
         const statusElement = document.getElementById('status');
         
-        // Cambia il testo ogni 800ms
         const interval = setInterval(() => {
             if (i < messages.length) {
                 statusElement.innerText = messages[i];
@@ -129,11 +123,10 @@
             }
         }, 800);
 
-        // Reindirizzamento automatico dopo 4 secondi
         setTimeout(() => {
-            document.body.classList.add('fade-out'); // Effetto dissolvenza prima di cambiare
+            document.body.classList.add('fade-out'); 
             setTimeout(() => {
-                window.location.href = "kyros.html"; // ASSICURATI CHE IL FILE SI CHIAMI ESATTAMENTE COSI
+                window.location.href = "kyros.html"; 
             }, 500);
         }, 4000);
     </script>
