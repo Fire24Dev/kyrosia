@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KyrosIA - Evolution</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -98,13 +98,22 @@
         updateStatus();
         if (userRole === "Owner") {
             addMsg("ai", `Benvenuto <b>Fire</b>, sistemi pronti. Tutti i comandi sbloccati.`);
+        } else if (userRole === "Admin") {
+            addMsg("ai", `Benvenuto <b>Admin</b>, sistemi pronti. Tutti i comandi sbloccati.`);
         } else {
             addMsg("ai", `Ciao <b>${currentNick}</b>! Sono KyrosIA, come posso aiutarti oggi?`);
         }
     }
 
     function updateStatus() {
-        let text = userRole === "Owner" ? "OWNER: " : "UTENTE: ";
+        let text = "";
+        if (userRole === "Owner") {
+            text = "OWNER: ";
+        } else if (userRole === "Admin") {
+            text = "ADMIN: ";
+        } else {
+            text = "UTENTE: ";
+        }
         text += currentNick;
         if(isMaintenance) text += " [OFFLINE]";
         statusLabel.innerText = text;
@@ -137,7 +146,7 @@
     function renderAssist() {
         const body = document.getElementById('assist-body');
         body.innerHTML = "";
-        if (userRole === "Owner") {
+        if (userRole === "Owner" || userRole === "Admin") {
             document.getElementById('assist-title').innerText = "Richieste Pendenti";
             assistRequests.forEach((req, index) => {
                 body.innerHTML += `
@@ -188,7 +197,7 @@
     async function handleSend() {
         const text = input.value.trim();
         if (!text) return;
-        if (blacklist.includes(currentNick) && userRole !== "Owner") {
+        if (blacklist.includes(currentNick) && userRole !== "Owner" && userRole !== "Admin") {
             addMsg("ai", "<b>ACCESSO NEGATO:</b> Il tuo account è nella blacklist.");
             return;
         }
@@ -197,12 +206,12 @@
         input.value = "";
 
         if (text.startsWith("/")) {
-            if (userRole === "Owner") handleCommands(text);
+            if (userRole === "Owner" || userRole === "Admin") handleCommands(text);
             else addMsg("ai", "<b>ERRORE:</b> Comandi riservati all'Owner.");
             return;
         }
 
-        if (isMaintenance && userRole !== "Owner") {
+        if (isMaintenance && userRole !== "Owner" && userRole !== "Admin") {
             addMsg("ai", "<b>MANUTENZIONE:</b> KyrosIA è momentaneamente offline.");
             return;
         }
