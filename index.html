@@ -145,6 +145,12 @@
             const pass = document.getElementById('password').value.trim();
             const btn = document.getElementById('action-btn');
 
+            const blacklist = JSON.parse(localStorage.getItem('kyros_blacklist')) || [];
+            if (blacklist.includes(email)) {
+                showError("ERRORE: Sei in blacklist.");
+                return;
+            }
+
             if (isLogin) {
                 if (!email || !pass) return showError("Tutti i campi sono richiesti.");
                 btn.disabled = true;
