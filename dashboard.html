@@ -46,13 +46,13 @@
         input:focus { border-color: var(--accent); }
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: none; justify-content: center; align-items: center; z-index: 2000; }
-        .modal-card { background: #0a1120; padding: 30px; border-radius: 24px; border: 1px solid var(--glass-border); max-width: 500px; width: 90%; max-height: 80vh; display: flex; flex-direction: column; gap: 20px; }
+        .modal-card { background: #0a1120; padding: 30px; border-radius: 24px; border: 1px solid var(--glass-border); max-width: 550px; width: 90%; max-height: 85vh; display: flex; flex-direction: column; gap: 20px; }
         .modal-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         
         .list-item { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 12px 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; cursor: pointer; }
         .list-item:hover { background: rgba(255,255,255,0.08); }
 
-        .chat-box { flex: 1; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; min-height: 200px; max-height: 350px; }
+        .chat-box { flex: 1; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; min-height: 200px; max-height: 300px; }
         .chat-msg { padding: 8px 12px; border-radius: 10px; max-width: 80%; font-size: 0.85rem; }
         .chat-msg.me { align-self: flex-end; background: var(--accent); color: black; }
         .chat-msg.them { align-self: flex-start; background: rgba(255,255,255,0.1); color: white; }
@@ -65,7 +65,7 @@
         <div style="color: var(--text-dim); font-size: 0.75rem; font-weight: 600;" id="admin-identity">Verifica sessione...</div>
         <hr style="border: 0; border-top: 1px solid var(--glass-border); margin: 10px 0;">
         <button onclick="enterKyros()" class="btn-control btn-action" style="width: 100%; margin-top: auto; margin-bottom: 10px;"><i class="fas fa-robot"></i> Entra</button>
-        <button onclick="logout()" class="btn-control btn-action" style="width: 1000%;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        <button onclick="logout()" class="btn-control btn-action" style="width: 100%;"><i class="fas fa-sign-out-alt"></i> Logout</button>
     </nav>
 
     <main>
@@ -92,10 +92,11 @@
             <div class="card">
                 <h3>Richieste Assistenza</h3>
                 <div class="value" id="count-assist">0</div>
-                <button onclick="viewAssist()" class="btn-control btn-action" style="width: 100%; margin-top: 53px; justify-content: center;">Gestisci Richieste</button>
+                <button onclick="viewAssist()" class="btn-control btn-action" style="width: 100%; margin-top: 10px; justify-content: center;">Gestisci Richieste</button>
+                <button onclick="viewTranscriptsArchive()" class="btn-control btn-action" style="width: 100%; margin-top: 5px; justify-content: center; border-color: rgba(0,242,255,0.3); color: var(--accent);"><i class="fas fa-archive"></i> Archivio Transcripts</button>
             </div>
             <div class="card">
-                <h3>Utenti Scrivendo</h3>
+                <h3>Utenti Connessi</h3>
                 <div class="value" id="count-connected" style="color: var(--accent);">0</div>
                 <button onclick="viewConnected()" class="btn-control btn-action" style="width: 100%; margin-top: 53px; justify-content: center;">Vedi Lista</button>
             </div>
@@ -150,8 +151,8 @@
         async function fetchCloudData() {
             document.getElementById('count-blacklist').innerText = blacklist.length;
 
-            const { data: tickets } = await supabaseClient.from('kyros_messages').select('sender').neq('room', 'global');
-            const distinctTickets = [...new Set(tickets?.map(t => t.sender))];
+            const { data: tickets } = await supabaseClient.from('kyros_messages').select('room');
+            const distinctTickets = [...new Set(tickets?.filter(t => t.room.startsWith('assist_')).map(t => t.room))];
             document.getElementById('count-assist').innerText = distinctTickets.length;
 
             const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
@@ -178,7 +179,6 @@
         function banUser() {
             const target = document.getElementById('ban-target').value.trim();
             if (!target) return;
-            
             if (blacklist.includes(target)) {
                 blacklist = blacklist.filter(user => user !== target);
                 localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
@@ -235,11 +235,11 @@
             clearInterval(previewInterval);
             document.getElementById('modal-title').innerText = `Live Input: ${username}`;
             const content = document.getElementById('modal-content');
-            content.innerHTML = `<div style="background: #000; padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border); min-height: 100px; font-family: monospace; color: var(--accent);" id="live-typing-container">In attesa di digitazione...</div>`;
+            content.innerHTML = `<div style="background: #000; padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border); min-height: 100px; font-family: monospace; color: var(--accent); word-wrap: break-word;" id="live-typing-container">In attesa di digitazione...</div>`;
             
             const trackPreview = async () => {
                 const { data } = await supabaseClient.from('online_users').select('current_typing').eq('username', username).single();
-                if (data) {
+                if (data && document.getElementById('live-typing-container')) {
                     document.getElementById('live-typing-container').innerText = data.current_typing || "(Casella di testo vuota)";
                 }
             };
@@ -251,8 +251,8 @@
             document.getElementById('modal-title').innerText = "Canali Assistenza Attivi";
             const content = document.getElementById('modal-content');
             content.innerHTML = "";
-            const { data: messages } = await supabaseClient.from('kyros_messages').select('sender').neq('room', 'global');
-            const distinctUsers = [...new Set(messages?.filter(m => m.sender !== 'STAFF').map(m => m.sender))];
+            const { data: messages } = await supabaseClient.from('kyros_messages').select('room');
+            const distinctUsers = [...new Set(messages?.filter(m => m.room.startsWith('assist_')).map(m => m.room.replace('assist_', '')))];
 
             if (distinctUsers.length === 0) {
                 content.innerHTML = `<div style="color: var(--text-dim); text-align: center;">Nessuna chat di assistenza aperta.</div>`;
@@ -275,7 +275,7 @@
                     <input type="text" id="admin-chat-input" placeholder="Scrivi una risposta all'utente...">
                     <button onclick="sendAdminChatMessage()" class="btn-control btn-toggle-off" style="padding:12px;"><i class="fas fa-paper-plane"></i></button>
                 </div>
-                <button onclick="clearTicket('${username}')" class="btn-control btn-action" style="color: var(--danger); margin-top: 10px; justify-content: center;"><i class="fas fa-trash"></i> Chiudi e Archivia Ticket</button>
+                <button onclick="archiveAndClearTicket('${username}')" class="btn-control btn-action" style="color: var(--success); margin-top: 10px; justify-content: center; border-color: rgba(0,255,136,0.2);"><i class="fas fa-file-invoice"></i> Archivia Transcript e Chiudi</button>
             `;
             
             const loadMessages = async () => {
@@ -291,7 +291,7 @@
             };
 
             loadMessages();
-            chatInterval = setInterval(loadMessages, 2000);
+            chatInterval = setInterval(loadMessages, 1500);
             
             setTimeout(() => {
                 document.getElementById('admin-chat-input').onkeypress = (e) => { if(e.key === 'Enter') sendAdminChatMessage(); };
@@ -306,13 +306,54 @@
             input.value = "";
         }
 
-        async function clearTicket(username) {
-            if(confirm(`Sei sicuro di voler eliminare l'intera sessione chat di ${username}?`)) {
+        async function archiveAndClearTicket(username) {
+            if(confirm(`Disconnettere la sessione? Verrà generato e salvato automaticamente il transcript nell'archivio.`)) {
                 clearInterval(chatInterval);
+                
+                const { data: messages } = await supabaseClient.from('kyros_messages').select('*').eq('room', `assist_${username}`).order('created_at', { ascending: true });
+                
+                if (messages && messages.length > 0) {
+                    let textTranscript = `TRANSCRIPT CHAT ASSISTENZA - UTENTE: ${username}\nGenerato il: ${new Date().toLocaleString()}\n--------------------------------------------------\n\n`;
+                    messages.forEach(m => {
+                        textTranscript += `[${new Date(m.created_at).toLocaleTimeString()}] ${m.sender}: ${m.message}\n`;
+                    });
+                    
+                    await supabaseClient.from('kyros_transcripts').insert([{ username: username, transcript: textTranscript, closed_by: currentNick }]);
+                }
+
                 await supabaseClient.from('kyros_messages').delete().eq('room', `assist_${username}`);
-                logTerminal(`Ticket rimosso e archiviato per: ${username}`);
+                logTerminal(`Ticket archiviato con successo per: ${username}`);
                 viewAssist();
             }
+        }
+
+        async function viewTranscriptsArchive() {
+            document.getElementById('modal-title').innerText = "Archivio Storico Report Transcripts";
+            const content = document.getElementById('modal-content');
+            content.innerHTML = "<div style='text-align:center;'>Caricamento registro storico...</div>";
+            
+            const { data: list } = await supabaseClient.from('kyros_transcripts').select('*').order('created_at', { ascending: false });
+            content.innerHTML = "";
+            
+            if (!list || list.length === 0) {
+                content.innerHTML = "<div style='color: var(--text-dim); text-align: center;'>Nessun foglio di transcript salvato in memoria.</div>";
+                document.getElementById('modal-container').style.display = "flex";
+                return;
+            }
+
+            list.forEach(item => {
+                const dateStr = new Date(item.created_at).toLocaleDateString();
+                content.innerHTML += `
+                    <div class="list-item" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+                        <div style="display:flex; justify-content:space-between; width:100%; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                            <span style="color: var(--accent); font-weight:800;"><i class="fas fa-file-alt"></i> ${item.username}</span>
+                            <span style="font-size:0.75rem; color:var(--text-dim);">${dateStr} (da: ${item.closed_by})</span>
+                        </div>
+                        <pre style="background: rgba(0,0,0,0.4); width:100%; padding: 10px; border-radius:8px; font-size:0.75rem; color:#fff; white-space:pre-wrap; font-family:monospace; max-height:120px; overflow-y:auto; margin-top:5px;">${item.transcript}</pre>
+                    </div>
+                `;
+            });
+            document.getElementById('modal-container').style.display = "flex";
         }
 
         function closeModal() {
