@@ -156,13 +156,18 @@
 
         const isMaintenanceActive = true; 
 
-        window.addEventListener('DOMContentLoaded', () => {
+        function checkMaintenanceView() {
             const staffBypass = sessionStorage.getItem('kyros_staff_bypass') === 'true';
             if (isMaintenanceActive && !staffBypass) {
                 document.getElementById('main-login-card').style.display = 'none';
                 document.getElementById('maintenance-screen').style.display = 'flex';
+            } else {
+                document.getElementById('maintenance-screen').style.display = 'none';
+                document.getElementById('main-login-card').style.display = 'block';
             }
-        });
+        }
+
+        window.addEventListener('DOMContentLoaded', checkMaintenanceView);
 
         function bypassMaintenance() {
             document.getElementById('maintenance-screen').style.display = 'none';
@@ -226,19 +231,18 @@
                         sessionStorage.setItem('kyros_role', 'User');
                     }
 
+                    if (isStaff) {
+                        sessionStorage.setItem('kyros_staff_bypass', 'true');
+                    }
+
                     if (isMaintenanceActive && !isStaff) {
                         showError("Sistemi in manutenzione. Accesso consentito solo allo staff.");
                         btn.innerText = "Accedi";
                         btn.disabled = false;
                         await supabaseClient.auth.signOut();
-                        setTimeout(() => {
-                            location.reload();
-                        }, 2000);
+                        sessionStorage.removeItem('kyros_staff_bypass');
+                        checkMaintenanceView();
                         return;
-                    }
-
-                    if (isStaff) {
-                        sessionStorage.setItem('kyros_staff_bypass', 'true');
                     }
 
                     sessionStorage.setItem('kyros_session', data.user.email);
