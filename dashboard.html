@@ -250,8 +250,6 @@
 
         let isMaintenance = localStorage.getItem('kyros_maintenance') === 'true';
         let blacklist = JSON.parse(localStorage.getItem('kyros_blacklist')) || [];
-        let assistanceTickets = JSON.parse(localStorage.getItem('kyros_assistance')) || [];
-        let connectedUsers = JSON.parse(localStorage.getItem('kyros_connected')) || [];
 
         const listOwner = ["92ea00e8-2f52-4154-98d8-ad681826ea8c", "e0009f13-f510-4246-bcc7-46edd270fcef"];
         const listAdmin = ["2b7fc786-2b23-4d2d-8e85-09146479e63e"];
@@ -262,7 +260,8 @@
             } else {
                 document.getElementById('admin-identity').innerText = `${userRole.toUpperCase()}: ${currentNick}`;
                 logTerminal(`Sistema agganciato. Benvenuto operatore ${currentNick}.`);
-                updateUI();
+                fetchCloudData();
+                setInterval(fetchCloudData, 10000);
             }
         }
 
@@ -273,11 +272,21 @@
             out.scrollTop = out.scrollHeight;
         }
 
-        function updateUI() {
+        async function fetchCloudData() {
             document.getElementById('count-blacklist').innerText = blacklist.length;
-            document.getElementById('count-assist').innerText = assistanceTickets.length;
-            document.getElementById('count-connected').innerText = connectedUsers.length;
-            
+
+            const { count: assistCount } = await supabaseClient
+                .from('assistance_tickets')
+                .select('*', { count: 'exact', head: true });
+            document.getElementById('count-assist').innerText = assistCount || 0;
+
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+            const { count: onlineCount } = await supabaseClient
+                .from('online_users')
+                .select('*', { count: 'exact', head: true })
+                .gt('last_seen', fiveMinutesAgo);
+            document.getElementById('count-connected').innerText = onlineCount || 0;
+
             const mBtn = document.getElementById('maintenance-btn');
             if (isMaintenance) {
                 mBtn.className = "btn-control btn-toggle-on";
@@ -292,7 +301,7 @@
             isMaintenance = !isMaintenance;
             localStorage.setItem('kyros_maintenance', isMaintenance);
             logTerminal(`Variazione stato manutenzione di sistema: ${isMaintenance ? "OFFLINE/MANUTENZIONE" : "ONLINE"}`);
-            updateUI();
+            fetchCloudData();
         }
 
         function banUser() {
@@ -309,23 +318,28 @@
                 logTerminal(`Eseguito comando BAN per l'identità: ${target}`);
             }
             document.getElementById('ban-target').value = "";
-            updateUI();
+            fetchCloudData();
         }
 
         function unbanFromList(target) {
             blacklist = blacklist.filter(user => user !== target);
             localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
             logTerminal(`Eseguito comando UNBAN dalla lista per: ${target}`);
-            updateUI();
+            fetchCloudData();
             viewBans();
         }
 
-        function resolveTicket(index) {
-            logTerminal(`Ticket archiviato e risolto per l'utente: ${assistanceTickets[index].user}`);
-            assistanceTickets.splice(index, 1);
-            localStorage.setItem('kyros_assistance', JSON.stringify(assistanceTickets));
-            updateUI();
-            viewAssist();
+        async function resolveTicket(id, user) {
+            const { error } = await supabaseClient
+                .from('assistance_tickets')
+                .delete()
+                .eq('id', id);
+
+            if (!error) {
+                logTerminal(`Ticket archiviato e risolto per l'utente: ${user}`);
+                fetchCloudData();
+                viewAssist();
+            }
         }
 
         function viewBans() {
@@ -348,23 +362,29 @@
             document.getElementById('modal-container').style.display = "flex";
         }
 
-        function viewAssist() {
+        async function viewAssist() {
             document.getElementById('modal-title').innerText = "Richieste d'Assistenza Live";
             const content = document.getElementById('modal-content');
             content.innerHTML = "";
             
-            if (assistanceTickets.length === 0) {
+            const { data: tickets } = await supabaseClient
+                .from('assistance_tickets')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (!tickets || tickets.length === 0) {
                 content.innerHTML = `<div style="color: var(--text-dim); text-align: center;">Nessun ticket di assistenza aperto.</div>`;
             } else {
-                assistanceTickets.forEach((ticket, index) => {
+                tickets.forEach(ticket => {
+                    const timeStr = new Date(ticket.created_at).toLocaleTimeString();
                     content.innerHTML += `
                         <div class="list-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
                             <div style="display: flex; justify-content: space-between; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">
-                                <span style="font-weight: 800; color: var(--accent);"><i class="fas fa-ticket-alt"></i> ${ticket.user}</span>
-                                <span style="font-size: 0.75rem; color: var(--text-dim);">${ticket.time || ''}</span>
+                                <span style="font-weight: 800; color: var(--accent);"><i class="fas fa-ticket-alt"></i> ${ticket.username}</span>
+                                <span style="font-size: 0.75rem; color: var(--text-dim);">${timeStr}</span>
                             </div>
                             <div style="font-size: 0.85rem; color: white;">${ticket.message}</div>
-                            <button onclick="resolveTicket(${index})" class="btn-control btn-action" style="padding: 6px 12px; font-size: 0.75rem; align-self: flex-end; color: var(--success);"><i class="fas fa-check"></i> Risolvi</button>
+                            <button onclick="resolveTicket(${ticket.id}, '${ticket.username}')" class="btn-control btn-action" style="padding: 6px 12px; font-size: 0.75rem; align-self: flex-end; color: var(--success);"><i class="fas fa-check"></i> Risolvi</button>
                         </div>
                     `;
                 });
@@ -372,19 +392,25 @@
             document.getElementById('modal-container').style.display = "flex";
         }
 
-        function viewConnected() {
+        async function viewConnected() {
             document.getElementById('modal-title').innerText = "Utenti Connessi a KyrosIA";
             const content = document.getElementById('modal-content');
             content.innerHTML = "";
             
-            if (connectedUsers.length === 0) {
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+            const { data: users } = await supabaseClient
+                .from('online_users')
+                .select('username')
+                .gt('last_seen', fiveMinutesAgo);
+
+            if (!users || users.length === 0) {
                 content.innerHTML = `<div style="color: var(--text-dim); text-align: center;">Nessun utente connesso attualmente.</div>`;
             } else {
-                connectedUsers.forEach(user => {
+                users.forEach(user => {
                     content.innerHTML += `
                         <div class="list-item">
-                            <span><i class="fas fa-circle" style="color: var(--success); font-size: 0.6rem; margin-right: 10px; vertical-align: middle;"></i> ${user}</span>
-                            <span style="font-size: 0.75rem; color: var(--text-dim);">In Sessione</span>
+                            <span><i class="fas fa-circle" style="color: var(--success); font-size: 0.6rem; margin-right: 10px; vertical-align: middle;"></i> ${user.username}</span>
+                            <span style="font-size: 0.75rem; color: var(--text-dim);">Attivo</span>
                         </div>
                     `;
                 });
