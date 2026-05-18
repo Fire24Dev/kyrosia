@@ -69,7 +69,7 @@
 <div id="chat-window"></div>
 
 <div class="input-area">
-    <input type="text" id="userInput" placeholder="Invia un messaggio..." autocomplete="off" onkeyup="updateLiveTypingStatus()">
+    <input type="text" id="userInput" placeholder="Invia un messaggio..." autocomplete="off">
     <button onclick="handleSend()" class="btn-ui btn-send">➤</button>
 </div>
 
@@ -116,8 +116,12 @@
             addMsg("ai", `Ciao <b>${currentNick}</b>! Sono KyrosIA, come posso aiutarti oggi?`);
         }
         reportOnlineStatus();
-        setInterval(reportOnlineStatus, 60000);
+        setInterval(reportOnlineStatus, 30000);
         
+        input.addEventListener('input', () => {
+            updateLiveTypingStatus(input.value);
+        });
+
         document.getElementById('userAssistText').onkeypress = (e) => { if(e.key === 'Enter') sendUserAssistMessage(); };
     }
 
@@ -137,9 +141,8 @@
         await supabaseClient.from('online_users').upsert({ username: currentNick, last_seen: new Date().toISOString() }, { onConflict: 'username' });
     }
 
-    async function updateLiveTypingStatus() {
+    async function updateLiveTypingStatus(val) {
         if (!currentNick) return;
-        const val = input.value;
         await supabaseClient.from('online_users').update({ current_typing: val }).eq('username', currentNick);
     }
 
@@ -148,7 +151,7 @@
         overlay.style.display = (overlay.style.display === 'block') ? 'none' : 'block';
         if (overlay.style.display === 'block') {
             loadAssistChat();
-            assistInterval = setInterval(loadAssistChat, 2000);
+            assistInterval = setInterval(loadAssistChat, 1500);
         } else {
             clearInterval(assistInterval);
         }
@@ -157,6 +160,7 @@
     async function loadAssistChat() {
         const { data } = await supabaseClient.from('kyros_messages').select('*').eq('room', `assist_${currentNick}`).order('created_at', { ascending: true });
         const box = document.getElementById('user-assist-chatbox');
+        if(!box) return;
         box.innerHTML = "";
         if (data && data.length > 0) {
             data.forEach(m => {
@@ -208,7 +212,7 @@
 
         addMsg("user", text);
         input.value = "";
-        await supabaseClient.from('online_users').update({ current_typing: '' }).eq('username', currentNick);
+        updateLiveTypingStatus('');
 
         if (text.startsWith("/")) {
             if (userRole === "Owner" || userRole === "Admin") handleCommands(text);
