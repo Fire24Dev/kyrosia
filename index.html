@@ -85,12 +85,32 @@
 
         .footer-links { margin-top: 30px; font-size: 0.85rem; color: var(--text-dim); }
         .footer-links span { color: white; font-weight: 600; cursor: pointer; text-decoration: underline; }
+
+        #maintenance-screen {
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; padding: 30px; z-index: 999; position: relative;
+        }
+        .maintenance-title {
+            font-size: 1.8rem; font-weight: 800; color: #ffb703; letter-spacing: 2px; margin-bottom: 15px;
+        }
+        .maintenance-desc {
+            color: var(--text-dim); max-width: 320px; font-size: 0.9rem; line-height: 1.5; margin-bottom: 25px;
+        }
+        .staff-link {
+            font-size: 0.75rem; color: rgba(255,255,255,0.3); text-decoration: underline; cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <div class="bg-animate"></div>
 
-    <div class="login-card">
+    <div id="maintenance-screen">
+        <div class="maintenance-title">⚠ KYROSIA E' IN MANUTENZIONE ⚠</div>
+        <div class="maintenance-desc">I sistemi principali sono momentaneamente offline per aggiornamenti di sicurezza nucleo. Riprova più tardi.</div>
+        <div class="staff-link" onclick="bypassMaintenance()">Accesso Staff Autorizzato</div>
+    </div>
+
+    <div class="login-card" id="main-login-card">
         <div class="logo-area">
             <h1>KYROS IA</h1>
             <div class="subtitle" id="status-tag">SECURITY PROTOCOL</div>
@@ -130,6 +150,27 @@
         let isLogin = true;
         let generatedCode = null;
         let pendingUser = {};
+
+        const isMaintenanceActive = true; 
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const staffBypass = sessionStorage.getItem('kyros_staff_bypass') === 'true';
+            if (isMaintenanceActive && !staffBypass) {
+                document.getElementById('main-login-card').style.display = 'none';
+                document.getElementById('maintenance-screen').style.display = 'flex';
+            }
+        });
+
+        function bypassMaintenance() {
+            const password = prompt("Inserisci la chiave di sblocco Manutenzione Staff:");
+            if (password === "STAFF_MAINTENANCE_KEY_2026") {
+                sessionStorage.setItem('kyros_staff_bypass', 'true');
+                document.getElementById('maintenance-screen').style.display = 'none';
+                document.getElementById('main-login-card').style.display = 'block';
+            } else if (password !== null) {
+                alert("Chiave di sblocco non valida.");
+            }
+        }
 
         function toggleMode() {
             isLogin = !isLogin;
@@ -187,6 +228,14 @@
                         sessionStorage.setItem('kyros_role', 'User');
                     }
 
+                    if (isMaintenanceActive && !isStaff) {
+                        showError("Sistemi in manutenzione. Accesso consentito solo allo staff.");
+                        btn.innerText = "Accedi";
+                        btn.disabled = false;
+                        await supabaseClient.auth.signOut();
+                        return;
+                    }
+
                     sessionStorage.setItem('kyros_session', data.user.email);
                     btn.innerText = "AUTORIZZATO...";
                     
@@ -199,6 +248,9 @@
                     }, 800);
                 }
             } else {
+                if (isMaintenanceActive) {
+                    return showError("Registrazioni disabilitate durante la manutenzione.");
+                }
                 if (!email || !pass) return showError("Tutti i parametri sono richiesti.");
                 btn.disabled = true;
                 btn.innerText = "TRASMISSIONE...";
