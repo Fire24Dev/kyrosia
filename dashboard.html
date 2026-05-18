@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KyrosIA - Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg: #02040a;
+            --panel: rgba(10, 15, 25, 0.7);
+            --accent: #00f2ff;
+            --danger: #ff4b4b;
+            --success: #00ff88;
+            --text-dim: #94a3b8;
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1); }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        nav {
+            width: 260px;
+            background: rgba(5, 8, 16, 0.9);
+            border-right: 1px solid var(--glass-border);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .nav-logo {
+            font-size: 1.2rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            background: linear-gradient(to right, #fff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        main {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            overflow-y: auto;
+        }
+
+        .header-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .grid-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--panel);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 25px;
+            position: relative;
+        }
+
+        .card h3 { font-size: 0.85rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .card .value { font-size: 1.8rem; font-weight: 800; }
+
+        .console-area {
+            background: #050810;
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 20px;
+            flex: 1;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .console-log {
+            flex: 1;
+            overflow-y: auto;
+            color: var(--success);
+            font-size: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .btn-control {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        .btn-toggle-on { background: var(--danger); color: white; }
+        .btn-toggle-off { background: var(--success); color: black; }
+        .btn-action { background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--glass-border); }
+        .btn-action:hover { background: white; color: black; }
+
+        .row-inputs {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: white;
+            outline: none;
+        }
+        input:focus { border-color: var(--accent); }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="nav-logo">KYROS PANEL</div>
+        <div style="color: var(--text-dim); font-size: 0.75rem; font-weight: 600;" id="admin-identity">Verifica sessione...</div>
+        <hr style="border: 0; border-top: 1px solid var(--glass-border); margin: 10px 0;">
+        <button onclick="logout()" class="btn-control btn-action" style="width: 100%; margin-top: auto;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </nav>
+
+    <main>
+        <div class="header-panel">
+            <div>
+                <h2>Pannello di Controllo Gestione</h2>
+                <p style="color: var(--text-dim); font-size: 0.9rem;">Monitoraggio in tempo reale dei sistemi dell'IA</p>
+            </div>
+            <button id="maintenance-btn" onclick="toggleMaintenance()" class="btn-control btn-toggle-off">
+                <i class="fas fa-power-off"></i> Stato: ONLINE
+            </button>
+        </div>
+
+        <div class="grid-stats">
+            <div class="card">
+                <h3>Blacklist Attiva</h3>
+                <div class="value" id="count-blacklist">0</div>
+                <div class="row-inputs">
+                    <input type="text" id="ban-target" placeholder="User Nick">
+                    <button onclick="banUser()" class="btn-control btn-action" style="padding: 10px;"><i class="fas fa-gavel"></i></button>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Richieste Assistenza</h3>
+                <div class="value" id="count-assist">0</div>
+                <button onclick="viewAssist()" class="btn-control btn-action" style="width: 100%; margin-top: 10px; justify-content: center;">Gestisci Richieste</button>
+            </div>
+            <div class="card">
+                <h3>Latenza Core API</h3>
+                <div class="value" style="color: var(--accent);">STABLE</div>
+            </div>
+        </div>
+
+        <div class="console-area">
+            <div style="color: var(--text-dim); font-size: 0.8rem; font-weight: 800; border-bottom: 1px solid var(--glass-border); padding-bottom: 5px; margin-bottom: 10px;">CONSOLE LIVE LOGS</div>
+            <div class="console-log" id="console-output"></div>
+        </div>
+    </main>
+
+    <script>
+        const SUPABASE_URL = "https://tbrqshnlkbgbkpjpazhs.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_HnO2-0fF_zWw-4KTM2BBuw_FJCbkkOQ"; 
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const currentNick = sessionStorage.getItem('kyros_session');
+        const userRole = sessionStorage.getItem('kyros_role');
+
+        let isMaintenance = localStorage.getItem('kyros_maintenance') === 'true';
+        let blacklist = JSON.parse(localStorage.getItem('kyros_blacklist')) || [];
+
+        const listOwner = ["92ea00e8-2f52-4154-98d8-ad681826ea8c", "e0009f13-f510-4246-bcc7-46edd270fcef"];
+        const listAdmin = ["2b7fc786-2b23-4d2d-8e85-09146479e63e"];
+
+        function checkAuth() {
+            if (!currentNick || (userRole !== "Owner" && userRole !== "Admin")) {
+                window.location.href = "index.html";
+            } else {
+                document.getElementById('admin-identity').innerText = `${userRole.toUpperCase()}: ${currentNick}`;
+                logTerminal(`Sistema agganciato. Benvenuto operatore ${currentNick}.`);
+                updateUI();
+            }
+        }
+
+        function logTerminal(message) {
+            const out = document.getElementById('console-output');
+            const time = new Date().toLocaleTimeString();
+            out.innerHTML += `<div>[${time}] > ${message}</div>`;
+            out.scrollTop = out.scrollHeight;
+        }
+
+        function updateUI() {
+            document.getElementById('count-blacklist').innerText = blacklist.length;
+            
+            const mBtn = document.getElementById('maintenance-btn');
+            if (isMaintenance) {
+                mBtn.className = "btn-control btn-toggle-on";
+                mBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Stato: MANUTENZIONE';
+            } else {
+                mBtn.className = "btn-control btn-toggle-off";
+                mBtn.innerHTML = '<i class="fas fa-power-off"></i> Stato: ONLINE';
+            }
+        }
+
+        function toggleMaintenance() {
+            isMaintenance = !isMaintenance;
+            localStorage.setItem('kyros_maintenance', isMaintenance);
+            logTerminal(`Variazione stato manutenzione di sistema: ${isMaintenance ? "OFFLINE/MANUTENZIONE" : "ONLINE"}`);
+            updateUI();
+        }
+
+        function banUser() {
+            const target = document.getElementById('ban-target').value.trim();
+            if (!target) return;
+            if (!blacklist.includes(target)) {
+                blacklist.push(target);
+                localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
+                logTerminal(`Eseguito comando BAN per l'identità: ${target}`);
+                document.getElementById('ban-target').value = "";
+                updateUI();
+            }
+        }
+
+        function viewAssist() {
+            logTerminal("Apertura archivio ticket di supporto...");
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = "index.html";
+        }
+
+        checkAuth();
+    </script>
+</body>
+</html>
