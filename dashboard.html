@@ -138,6 +138,49 @@
             outline: none;
         }
         input:focus { border-color: var(--accent); }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-card {
+            background: #0a1120;
+            padding: 30px;
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .modal-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .list-item {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--glass-border);
+            padding: 12px 16px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -169,15 +212,17 @@
                     <input type="text" id="ban-target" placeholder="User Nick">
                     <button onclick="banUser()" class="btn-control btn-action" style="padding: 10px;"><i class="fas fa-gavel"></i></button>
                 </div>
+                <button onclick="viewBans()" class="btn-control btn-action" style="width: 100%; margin-top: 10px; justify-content: center;">Vedi Lista</button>
             </div>
             <div class="card">
                 <h3>Richieste Assistenza</h3>
                 <div class="value" id="count-assist">0</div>
-                <button onclick="viewAssist()" class="btn-control btn-action" style="width: 100%; margin-top: 10px; justify-content: center;">Gestisci Richieste</button>
+                <button onclick="viewAssist()" class="btn-control btn-action" style="width: 100%; margin-top: 53px; justify-content: center;">Gestisci Richieste</button>
             </div>
             <div class="card">
-                <h3>Latenza Core API</h3>
-                <div class="value" style="color: var(--accent);">STABLE</div>
+                <h3>Utenti Connessi</h3>
+                <div class="value" id="count-connected" style="color: var(--accent);">0</div>
+                <button onclick="viewConnected()" class="btn-control btn-action" style="width: 100%; margin-top: 53px; justify-content: center;">Vedi Lista</button>
             </div>
         </div>
 
@@ -186,6 +231,14 @@
             <div class="console-log" id="console-output"></div>
         </div>
     </main>
+
+    <div class="modal-overlay" id="modal-container">
+        <div class="modal-card">
+            <h2 id="modal-title" style="font-size: 1.3rem;">Lista</h2>
+            <div class="modal-list" id="modal-content"></div>
+            <button onclick="closeModal()" class="btn-control btn-action" style="justify-content: center;">Chiudi</button>
+        </div>
+    </div>
 
     <script>
         const SUPABASE_URL = "https://tbrqshnlkbgbkpjpazhs.supabase.co";
@@ -197,6 +250,8 @@
 
         let isMaintenance = localStorage.getItem('kyros_maintenance') === 'true';
         let blacklist = JSON.parse(localStorage.getItem('kyros_blacklist')) || [];
+        let assistanceTickets = JSON.parse(localStorage.getItem('kyros_assistance')) || [];
+        let connectedUsers = JSON.parse(localStorage.getItem('kyros_connected')) || [];
 
         const listOwner = ["92ea00e8-2f52-4154-98d8-ad681826ea8c", "e0009f13-f510-4246-bcc7-46edd270fcef"];
         const listAdmin = ["2b7fc786-2b23-4d2d-8e85-09146479e63e"];
@@ -220,6 +275,8 @@
 
         function updateUI() {
             document.getElementById('count-blacklist').innerText = blacklist.length;
+            document.getElementById('count-assist').innerText = assistanceTickets.length;
+            document.getElementById('count-connected').innerText = connectedUsers.length;
             
             const mBtn = document.getElementById('maintenance-btn');
             if (isMaintenance) {
@@ -241,17 +298,102 @@
         function banUser() {
             const target = document.getElementById('ban-target').value.trim();
             if (!target) return;
-            if (!blacklist.includes(target)) {
+            
+            if (blacklist.includes(target)) {
+                blacklist = blacklist.filter(user => user !== target);
+                localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
+                logTerminal(`Eseguito comando REREVOKE-BAN (Sbannato): ${target}`);
+            } else {
                 blacklist.push(target);
                 localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
                 logTerminal(`Eseguito comando BAN per l'identità: ${target}`);
-                document.getElementById('ban-target').value = "";
-                updateUI();
             }
+            document.getElementById('ban-target').value = "";
+            updateUI();
+        }
+
+        function unbanFromList(target) {
+            blacklist = blacklist.filter(user => user !== target);
+            localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
+            logTerminal(`Eseguito comando UNBAN dalla lista per: ${target}`);
+            updateUI();
+            viewBans();
+        }
+
+        function resolveTicket(index) {
+            logTerminal(`Ticket archiviato e risolto per l'utente: ${assistanceTickets[index].user}`);
+            assistanceTickets.splice(index, 1);
+            localStorage.setItem('kyros_assistance', JSON.stringify(assistanceTickets));
+            updateUI();
+            viewAssist();
+        }
+
+        function viewBans() {
+            document.getElementById('modal-title').innerText = "Lista Utenti Bannati";
+            const content = document.getElementById('modal-content');
+            content.innerHTML = "";
+            
+            if (blacklist.length === 0) {
+                content.innerHTML = `<div style="color: var(--text-dim); text-align: center;">Nessun utente in blacklist.</div>`;
+            } else {
+                blacklist.forEach(user => {
+                    content.innerHTML += `
+                        <div class="list-item">
+                            <span><i class="fas fa-user-slash" style="color: var(--danger); margin-right: 10px;"></i> ${user}</span>
+                            <button onclick="unbanFromList('${user}')" class="btn-control btn-action" style="padding: 6px 12px; font-size: 0.75rem;"><i class="fas fa-undo"></i> Sbanna</button>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById('modal-container').style.display = "flex";
         }
 
         function viewAssist() {
-            logTerminal("Apertura archivio ticket di supporto...");
+            document.getElementById('modal-title').innerText = "Richieste d'Assistenza Live";
+            const content = document.getElementById('modal-content');
+            content.innerHTML = "";
+            
+            if (assistanceTickets.length === 0) {
+                content.innerHTML = `<div style="color: var(--text-dim); text-align: center;">Nessun ticket di assistenza aperto.</div>`;
+            } else {
+                assistanceTickets.forEach((ticket, index) => {
+                    content.innerHTML += `
+                        <div class="list-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                            <div style="display: flex; justify-content: space-between; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">
+                                <span style="font-weight: 800; color: var(--accent);"><i class="fas fa-ticket-alt"></i> ${ticket.user}</span>
+                                <span style="font-size: 0.75rem; color: var(--text-dim);">${ticket.time || ''}</span>
+                            </div>
+                            <div style="font-size: 0.85rem; color: white;">${ticket.message}</div>
+                            <button onclick="resolveTicket(${index})" class="btn-control btn-action" style="padding: 6px 12px; font-size: 0.75rem; align-self: flex-end; color: var(--success);"><i class="fas fa-check"></i> Risolvi</button>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById('modal-container').style.display = "flex";
+        }
+
+        function viewConnected() {
+            document.getElementById('modal-title').innerText = "Utenti Connessi a KyrosIA";
+            const content = document.getElementById('modal-content');
+            content.innerHTML = "";
+            
+            if (connectedUsers.length === 0) {
+                content.innerHTML = `<div style="color: var(--text-dim); text-align: center;">Nessun utente connesso attualmente.</div>`;
+            } else {
+                connectedUsers.forEach(user => {
+                    content.innerHTML += `
+                        <div class="list-item">
+                            <span><i class="fas fa-circle" style="color: var(--success); font-size: 0.6rem; margin-right: 10px; vertical-align: middle;"></i> ${user}</span>
+                            <span style="font-size: 0.75rem; color: var(--text-dim);">In Sessione</span>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById('modal-container').style.display = "flex";
+        }
+
+        function closeModal() {
+            document.getElementById('modal-container').style.display = "none";
         }
 
         function enterKyros() {
