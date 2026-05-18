@@ -6,6 +6,7 @@
     <title>KyrosIA - Evolution</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --bg: #050810;
@@ -83,6 +84,10 @@
     const _0xkey = [103,115,107,95,52,114,52,97,112,122,67,70,98,116,106,105,86,74,54,110,77,56,101,48,87,71,100,121,98,51,70,89,87,79,109,101,90,67,90,103,67,80,90,74,69,121,57,52,78,68,80,74,104,108,79,100];
     const _vault = () => _0xkey.map(c => String.fromCharCode(c)).join('');
 
+    const SUPABASE_URL = "https://tbrqshnlkbgbkpjpazhs.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_HnO2-0fF_zWw-4KTM2BBuw_FJCbkkOQ"; 
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     const currentNick = sessionStorage.getItem('kyros_session');
     const userRole = sessionStorage.getItem('kyros_role'); 
 
@@ -92,7 +97,6 @@
 
     let isMaintenance = localStorage.getItem('kyros_maintenance') === 'true';
     let blacklist = JSON.parse(localStorage.getItem('kyros_blacklist')) || [];
-    let assistRequests = JSON.parse(localStorage.getItem('kyros_assist')) || [];
 
     if (!currentNick) { window.location.href = "index.html"; }
 
@@ -105,6 +109,8 @@
         } else {
             addMsg("ai", `Ciao <b>${currentNick}</b>! Sono KyrosIA, come posso aiutarti oggi?`);
         }
+        reportOnlineStatus();
+        setInterval(reportOnlineStatus, 3 * 60 * 1000);
     }
 
     function updateStatus() {
@@ -126,6 +132,13 @@
         if(isMaintenance) {
             statusLabel.innerHTML += ' <span style="color: #8b0000; font-weight: 900;">[OFFLINE]</span>';
         }
+    }
+
+    async function reportOnlineStatus() {
+        if (!currentNick) return;
+        await supabaseClient
+            .from('online_users')
+            .upsert({ username: currentNick, last_seen: new Date().toISOString() }, { onConflict: 'username' });
     }
 
     function copyText(btn, textId) {
@@ -151,48 +164,62 @@
         if (overlay.style.display === 'block') renderAssist();
     }
 
-    function renderAssist() {
+    async function renderAssist() {
         const body = document.getElementById('assist-body');
         body.innerHTML = "";
         if (userRole === "Owner" || userRole === "Admin") {
             document.getElementById('assist-title').innerText = "Richieste Pendenti";
-            assistRequests.forEach((req, index) => {
-                body.innerHTML += `
-                    <div class="req-card">
-                        <p><b>Da:</b> ${req.user} <span class="status-badge" style="background:${getStatusColor(req.status)}">${req.status}</span></p>
-                        <p>${req.text}</p>
-                        ${req.status === 'pendente' ? `
-                            <button onclick="actionReq(${index}, 'risolto')" class="btn-ui" style="background:var(--success)">RISOLTO</button>
-                            <button onclick="actionReq(${index}, 'rifiutato')" class="btn-ui" style="background:var(--danger)">RIFIUTA</button>
-                        ` : `<p><small>Nota: ${req.note}</small></p>`}
-                    </div>`;
-            });
+            const { data: tickets } = await supabaseClient
+                .from('assistance_tickets')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (!tickets || tickets.length === 0) {
+                body.innerHTML = `<div style="color: var(--text-dim); text-align: center;">Nessun ticket di assistenza aperto.</div>`;
+            } else {
+                tickets.forEach(req => {
+                    body.innerHTML += `
+                        <div class="req-card">
+                            <p><b>Da:</b> ${req.username} <span class="status-badge" style="background:var(--accent)">pendente</span></p>
+                            <p>${req.message}</p>
+                            <button onclick="actionReq(${req.id}, '${req.username}')" class="btn-ui" style="background:var(--success)">RISOLTO</button>
+                        </div>`;
+                });
+            }
         } else {
             body.innerHTML = `<textarea id="assistText" placeholder="Di cosa hai bisogno?" style="width:100%; height:80px; background:rgba(0,0,0,0.2); color:white; border:1px solid var(--glass-border); border-radius:10px; padding:10px;"></textarea>
             <button onclick="sendAssist()" class="btn-ui btn-accent" style="width:100%; margin-top:10px;">INVIA</button><hr style="margin:20px 0; border:0; border-top:1px solid var(--glass-border)">`;
-            assistRequests.filter(r => r.user === currentNick).reverse().forEach(req => {
-                body.innerHTML += `<div class="req-card"><span class="status-badge" style="background:${getStatusColor(req.status)}">${req.status}</span><p>${req.text}</p>${req.note ? `<p style="color:var(--accent)">Nota: ${req.note}</p>` : ""}</div>`;
-            });
+            
+            const { data: userTickets } = await supabaseClient
+                .from('assistance_tickets')
+                .select('*')
+                .eq('username', currentNick)
+                .order('created_at', { ascending: false });
+
+            if (userTickets) {
+                userTickets.forEach(req => {
+                    body.innerHTML += `<div class="req-card"><span class="status-badge" style="background:var(--accent)">pendente</span><p>${req.message}</p></div>`;
+                });
+            }
         }
     }
 
-    function sendAssist() {
+    async function sendAssist() {
         const t = document.getElementById('assistText').value;
         if(!t) return;
-        assistRequests.push({user: currentNick, text: t, status: 'pendente', note: ''});
-        localStorage.setItem('kyros_assist', JSON.stringify(assistRequests));
+        await supabaseClient
+            .from('assistance_tickets')
+            .insert([{ username: currentNick, message: t }]);
         renderAssist();
     }
 
-    function actionReq(i, s) {
-        const n = prompt("Messaggio per l'utente:");
-        assistRequests[i].status = s;
-        assistRequests[i].note = n || "";
-        localStorage.setItem('kyros_assist', JSON.stringify(assistRequests));
+    async function actionReq(id, username) {
+        await supabaseClient
+            .from('assistance_tickets')
+            .delete()
+            .eq('id', id);
         renderAssist();
     }
-
-    function getStatusColor(s) { return s === 'risolto' ? 'var(--success)' : s === 'rifiutato' ? 'var(--danger)' : 'var(--accent)'; }
 
     function parseMarkdown(text) {
         return text
@@ -250,9 +277,15 @@
         const arg = p[1];
 
         if(cmd === "/ban") {
-            blacklist.push(arg);
-            localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
-            addMsg("ai", `Utente <b>${arg}</b> bannato.`);
+            if (!blacklist.includes(arg)) {
+                blacklist.push(arg);
+                localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
+                addMsg("ai", `Utente <b>${arg}</b> bannato.`);
+            } else {
+                blacklist = blacklist.filter(u => u !== arg);
+                localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
+                addMsg("ai", `Utente <b>${arg}</b> rimosso dalla blacklist.`);
+            }
         } else if(cmd === "/unban") {
             blacklist = blacklist.filter(u => u !== arg);
             localStorage.setItem('kyros_blacklist', JSON.stringify(blacklist));
