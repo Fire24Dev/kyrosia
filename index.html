@@ -154,10 +154,37 @@
         let generatedCode = null;
         let pendingUser = {};
 
-        const isMaintenanceActive = true; 
+        function listenMaintenance() {
+            supabaseClient
+                .channel('public:maintenance')
+                .on('postgres_changes', { event: '*', filter: 'id=eq.1', schema: 'public', table: 'maintenance' }, payload => {
+                    if (payload.new) {
+                        checkMaintenanceView(payload.new.is_active);
+                    }
+                })
+                .subscribe();
 
-        function checkMaintenanceView() {
+            fetchMaintenanceStatus();
+        }
+
+        async function fetchMaintenanceStatus() {
+            const { data, error } = await supabaseClient
+                .from('maintenance')
+                .select('is_active')
+                .eq('id', 1)
+                .single();
+            
+            if (!error && data) {
+                checkMaintenanceView(data.is_active);
+            } else {
+                checkMaintenanceView(false);
+            }
+        }
+
+        function checkMaintenanceView(isMaintenanceActive) {
+            window.currentMaintenanceState = isMaintenanceActive;
             const staffBypass = sessionStorage.getItem('kyros_staff_bypass') === 'true';
+            
             if (isMaintenanceActive && !staffBypass) {
                 document.getElementById('main-login-card').style.display = 'none';
                 document.getElementById('maintenance-screen').style.display = 'flex';
@@ -167,7 +194,7 @@
             }
         }
 
-        window.addEventListener('DOMContentLoaded', checkMaintenanceView);
+        window.addEventListener('DOMContentLoaded', listenMaintenance);
 
         function bypassMaintenance() {
             document.getElementById('maintenance-screen').style.display = 'none';
@@ -235,13 +262,13 @@
                         sessionStorage.setItem('kyros_staff_bypass', 'true');
                     }
 
-                    if (isMaintenanceActive && !isStaff) {
+                    if (window.currentMaintenanceState && !isStaff) {
                         showError("Sistemi in manutenzione. Accesso consentito solo allo staff.");
                         btn.innerText = "Accedi";
                         btn.disabled = false;
                         await supabaseClient.auth.signOut();
                         sessionStorage.removeItem('kyros_staff_bypass');
-                        checkMaintenanceView();
+                        checkMaintenanceView(true);
                         return;
                     }
 
@@ -257,7 +284,7 @@
                     }, 800);
                 }
             } else {
-                if (isMaintenanceActive) {
+                if (window.currentMaintenanceState) {
                     return showError("Registrazioni disabilitate durante la manutenzione.");
                 }
                 if (!email || !pass) return showError("Tutti i parametri sono richiesti.");
