@@ -97,7 +97,10 @@
             color: var(--text-dim); max-width: 320px; font-size: 0.9rem; line-height: 1.5; margin-bottom: 25px;
         }
         .staff-link {
-            font-size: 0.75rem; color: rgba(255,255,255,0.3); text-decoration: underline; cursor: pointer;
+            font-size: 0.85rem; color: #00f2ff; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; border: 1px solid rgba(0, 242, 255, 0.4); padding: 12px 24px; border-radius: 12px; background: rgba(0, 242, 255, 0.05);
+        }
+        .staff-link:hover {
+            background: rgba(0, 242, 255, 0.2); transform: translateY(-1px);
         }
     </style>
 </head>
@@ -107,7 +110,7 @@
     <div id="maintenance-screen">
         <div class="maintenance-title">⚠ KYROSIA E' IN MANUTENZIONE ⚠</div>
         <div class="maintenance-desc">I sistemi principali sono momentaneamente offline per aggiornamenti di sicurezza nucleo. Riprova più tardi.</div>
-        <div class="staff-link" onclick="bypassMaintenance()">Accesso Staff Autorizzato</div>
+        <div class="staff-link" onclick="bypassMaintenance()">Login Staff</div>
     </div>
 
     <div class="login-card" id="main-login-card">
@@ -162,14 +165,9 @@
         });
 
         function bypassMaintenance() {
-            const password = prompt("Inserisci la chiave di sblocco Manutenzione Staff:");
-            if (password === "STAFF_MAINTENANCE_KEY_2026") {
-                sessionStorage.setItem('kyros_staff_bypass', 'true');
-                document.getElementById('maintenance-screen').style.display = 'none';
-                document.getElementById('main-login-card').style.display = 'block';
-            } else if (password !== null) {
-                alert("Chiave di sblocco non valida.");
-            }
+            document.getElementById('maintenance-screen').style.display = 'none';
+            document.getElementById('main-login-card').style.display = 'block';
+            if (!isLogin) toggleMode();
         }
 
         function toggleMode() {
@@ -233,7 +231,14 @@
                         btn.innerText = "Accedi";
                         btn.disabled = false;
                         await supabaseClient.auth.signOut();
+                        setTimeout(() => {
+                            location.reload();
+                        }, 2000);
                         return;
+                    }
+
+                    if (isStaff) {
+                        sessionStorage.setItem('kyros_staff_bypass', 'true');
                     }
 
                     sessionStorage.setItem('kyros_session', data.user.email);
