@@ -136,7 +136,7 @@
             <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 25px;">Inserisci il codice trasmesso alla tua email per finalizzare l'identità.</p>
             <input type="text" id="verify-code-input" placeholder="------" maxlength="6" style="width: 100%; text-align: center; font-size: 1.5rem; letter-spacing: 4px; margin-bottom: 20px; border-color: var(--accent); padding: 10px; box-sizing: border-box;">
             <button onclick="confirmRegistration()" style="background: var(--accent);">Verifica Codice</button>
-            <p onclick="location.reload()" style="margin-top: 20px; font-size: 0.75rem; cursor: pointer; opacity: 0.6;">Annulla</p>
+            <p onclick="abortBypass()" style="margin-top: 20px; font-size: 0.75rem; cursor: pointer; opacity: 0.6;">Annulla</p>
         </div>
     </div>
 
@@ -153,6 +153,7 @@
         let isLogin = true;
         let generatedCode = null;
         let pendingUser = {};
+        let isStaffAttempt = false;
 
         function listenMaintenance() {
             supabaseClient
@@ -183,12 +184,12 @@
 
         function checkMaintenanceView(isMaintenanceActive) {
             window.currentMaintenanceState = isMaintenanceActive;
-            const staffBypass = sessionStorage.getItem('kyros_staff_bypass') === 'true';
             
-            if (isMaintenanceActive && !staffBypass) {
+            if (isMaintenanceActive && !isStaffAttempt) {
                 document.getElementById('main-login-card').style.display = 'none';
                 document.getElementById('maintenance-screen').style.display = 'flex';
-            } else {
+            } else if (!isMaintenanceActive) {
+                isStaffAttempt = false;
                 document.getElementById('maintenance-screen').style.display = 'none';
                 document.getElementById('main-login-card').style.display = 'block';
             }
@@ -197,9 +198,15 @@
         window.addEventListener('DOMContentLoaded', listenMaintenance);
 
         function bypassMaintenance() {
+            isStaffAttempt = true;
             document.getElementById('maintenance-screen').style.display = 'none';
             document.getElementById('main-login-card').style.display = 'block';
             if (!isLogin) toggleMode();
+        }
+
+        function abortBypass() {
+            isStaffAttempt = false;
+            checkMaintenanceView(window.currentMaintenanceState);
         }
 
         function toggleMode() {
@@ -258,16 +265,12 @@
                         sessionStorage.setItem('kyros_role', 'User');
                     }
 
-                    if (isStaff) {
-                        sessionStorage.setItem('kyros_staff_bypass', 'true');
-                    }
-
                     if (window.currentMaintenanceState && !isStaff) {
                         showError("Sistemi in manutenzione. Accesso consentito solo allo staff.");
                         btn.innerText = "Accedi";
                         btn.disabled = false;
                         await supabaseClient.auth.signOut();
-                        sessionStorage.removeItem('kyros_staff_bypass');
+                        isStaffAttempt = false;
                         checkMaintenanceView(true);
                         return;
                     }
