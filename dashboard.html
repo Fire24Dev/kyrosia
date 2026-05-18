@@ -19,168 +19,43 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1); }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: white; min-height: 100vh; display: flex; }
 
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: var(--bg);
-            color: white;
-            min-height: 100vh;
-            display: flex;
-        }
+        nav { width: 260px; background: rgba(5, 8, 16, 0.9); border-right: 1px solid var(--glass-border); padding: 30px 20px; display: flex; flex-direction: column; gap: 20px; }
+        .nav-logo { font-size: 1.2rem; font-weight: 800; letter-spacing: 2px; background: linear-gradient(to right, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px; }
 
-        nav {
-            width: 260px;
-            background: rgba(5, 8, 16, 0.9);
-            border-right: 1px solid var(--glass-border);
-            padding: 30px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+        main { flex: 1; padding: 40px; display: flex; flex-direction: column; gap: 30px; overflow-y: auto; }
+        .header-panel { display: flex; justify-content: space-between; align-items: center; }
+        .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
 
-        .nav-logo {
-            font-size: 1.2rem;
-            font-weight: 800;
-            letter-spacing: 2px;
-            background: linear-gradient(to right, #fff, var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 20px;
-        }
-
-        main {
-            flex: 1;
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-            gap: 30px;
-            overflow-y: auto;
-        }
-
-        .header-panel {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .grid-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-        }
-
-        .card {
-            background: var(--panel);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 25px;
-            position: relative;
-        }
-
+        .card { background: var(--panel); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 25px; position: relative; }
         .card h3 { font-size: 0.85rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
         .card .value { font-size: 1.8rem; font-weight: 800; }
 
-        .console-area {
-            background: #050810;
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            font-family: 'Courier New', Courier, monospace;
-            padding: 20px;
-            flex: 1;
-            min-height: 250px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+        .console-area { background: #050810; border: 1px solid var(--glass-border); border-radius: 20px; font-family: 'Courier New', Courier, monospace; padding: 20px; flex: 1; min-height: 250px; display: flex; flex-direction: column; gap: 10px; }
+        .console-log { flex: 1; overflow-y: auto; color: var(--success); font-size: 0.9rem; display: flex; flex-direction: column; gap: 5px; }
 
-        .console-log {
-            flex: 1;
-            overflow-y: auto;
-            color: var(--success);
-            font-size: 0.9rem;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .btn-control {
-            padding: 12px 24px;
-            border-radius: 12px;
-            border: none;
-            font-weight: 800;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-        }
-
+        .btn-control { padding: 12px 24px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.85rem; text-transform: uppercase; }
         .btn-toggle-on { background: var(--danger); color: white; }
         .btn-toggle-off { background: var(--success); color: black; }
         .btn-action { background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--glass-border); }
         .btn-action:hover { background: white; color: black; }
 
-        .row-inputs {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        input {
-            flex: 1;
-            padding: 12px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            color: white;
-            outline: none;
-        }
+        .row-inputs { display: flex; gap: 10px; margin-top: 10px; }
+        input { flex: 1; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 12px; color: white; outline: none; }
         input:focus { border-color: var(--accent); }
 
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(10px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal-card { background: #0a1120; padding: 30px; border-radius: 24px; border: 1px solid var(--glass-border); max-width: 500px; width: 90%; max-height: 80vh; display: flex; flex-direction: column; gap: 20px; }
+        .modal-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        
+        .list-item { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 12px 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; cursor: pointer; }
+        .list-item:hover { background: rgba(255,255,255,0.08); }
 
-        .modal-card {
-            background: #0a1120;
-            padding: 30px;
-            border-radius: 24px;
-            border: 1px solid var(--glass-border);
-            max-width: 500px;
-            width: 90%;
-            max-height: 80vh;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .modal-list {
-            flex: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .list-item {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--glass-border);
-            padding: 12px 16px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.9rem;
-        }
+        .chat-box { flex: 1; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; min-height: 200px; max-height: 350px; }
+        .chat-msg { padding: 8px 12px; border-radius: 10px; max-width: 80%; font-size: 0.85rem; }
+        .chat-msg.me { align-self: flex-end; background: var(--accent); color: black; }
+        .chat-msg.them { align-self: flex-start; background: rgba(255,255,255,0.1); color: white; }
     </style>
 </head>
 <body>
@@ -190,7 +65,7 @@
         <div style="color: var(--text-dim); font-size: 0.75rem; font-weight: 600;" id="admin-identity">Verifica sessione...</div>
         <hr style="border: 0; border-top: 1px solid var(--glass-border); margin: 10px 0;">
         <button onclick="enterKyros()" class="btn-control btn-action" style="width: 100%; margin-top: auto; margin-bottom: 10px;"><i class="fas fa-robot"></i> Entra</button>
-        <button onclick="logout()" class="btn-control btn-action" style="width: 100%;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        <button onclick="logout()" class="btn-control btn-action" style="width: 1000%;"><i class="fas fa-sign-out-alt"></i> Logout</button>
     </nav>
 
     <main>
@@ -220,7 +95,7 @@
                 <button onclick="viewAssist()" class="btn-control btn-action" style="width: 100%; margin-top: 53px; justify-content: center;">Gestisci Richieste</button>
             </div>
             <div class="card">
-                <h3>Utenti Connessi</h3>
+                <h3>Utenti Scrivendo</h3>
                 <div class="value" id="count-connected" style="color: var(--accent);">0</div>
                 <button onclick="viewConnected()" class="btn-control btn-action" style="width: 100%; margin-top: 53px; justify-content: center;">Vedi Lista</button>
             </div>
@@ -250,9 +125,9 @@
 
         let isMaintenance = localStorage.getItem('kyros_maintenance') === 'true';
         let blacklist = JSON.parse(localStorage.getItem('kyros_blacklist')) || [];
-
-        const listOwner = ["92ea00e8-2f52-4154-98d8-ad681826ea8c", "e0009f13-f510-4246-bcc7-46edd270fcef"];
-        const listAdmin = ["2b7fc786-2b23-4d2d-8e85-09146479e63e"];
+        let activeChatUser = null;
+        let chatInterval = null;
+        let previewInterval = null;
 
         function checkAuth() {
             if (!currentNick || (userRole !== "Owner" && userRole !== "Admin")) {
@@ -261,7 +136,7 @@
                 document.getElementById('admin-identity').innerText = `${userRole.toUpperCase()}: ${currentNick}`;
                 logTerminal(`Sistema agganciato. Benvenuto operatore ${currentNick}.`);
                 fetchCloudData();
-                setInterval(fetchCloudData, 10000);
+                setInterval(fetchCloudData, 4000);
             }
         }
 
@@ -275,16 +150,12 @@
         async function fetchCloudData() {
             document.getElementById('count-blacklist').innerText = blacklist.length;
 
-            const { count: assistCount } = await supabaseClient
-                .from('assistance_tickets')
-                .select('*', { count: 'exact', head: true });
-            document.getElementById('count-assist').innerText = assistCount || 0;
+            const { data: tickets } = await supabaseClient.from('kyros_messages').select('sender').neq('room', 'global');
+            const distinctTickets = [...new Set(tickets?.map(t => t.sender))];
+            document.getElementById('count-assist').innerText = distinctTickets.length;
 
             const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-            const { count: onlineCount } = await supabaseClient
-                .from('online_users')
-                .select('*', { count: 'exact', head: true })
-                .gt('last_seen', fiveMinutesAgo);
+            const { count: onlineCount } = await supabaseClient.from('online_users').select('*', { count: 'exact', head: true }).gt('last_seen', fiveMinutesAgo);
             document.getElementById('count-connected').innerText = onlineCount || 0;
 
             const mBtn = document.getElementById('maintenance-btn');
@@ -329,108 +200,129 @@
             viewBans();
         }
 
-        async function resolveTicket(id, user) {
-            const { error } = await supabaseClient
-                .from('assistance_tickets')
-                .delete()
-                .eq('id', id);
-
-            if (!error) {
-                logTerminal(`Ticket archiviato e risolto per l'utente: ${user}`);
-                fetchCloudData();
-                viewAssist();
-            }
-        }
-
         function viewBans() {
             document.getElementById('modal-title').innerText = "Lista Utenti Bannati";
             const content = document.getElementById('modal-content');
             content.innerHTML = "";
-            
             if (blacklist.length === 0) {
                 content.innerHTML = `<div style="color: var(--text-dim); text-align: center;">Nessun utente in blacklist.</div>`;
             } else {
                 blacklist.forEach(user => {
-                    content.innerHTML += `
-                        <div class="list-item">
-                            <span><i class="fas fa-user-slash" style="color: var(--danger); margin-right: 10px;"></i> ${user}</span>
-                            <button onclick="unbanFromList('${user}')" class="btn-control btn-action" style="padding: 6px 12px; font-size: 0.75rem;"><i class="fas fa-undo"></i> Sbanna</button>
-                        </div>
-                    `;
-                });
-            }
-            document.getElementById('modal-container').style.display = "flex";
-        }
-
-        async function viewAssist() {
-            document.getElementById('modal-title').innerText = "Richieste d'Assistenza Live";
-            const content = document.getElementById('modal-content');
-            content.innerHTML = "";
-            
-            const { data: tickets } = await supabaseClient
-                .from('assistance_tickets')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (!tickets || tickets.length === 0) {
-                content.innerHTML = `<div style="color: var(--text-dim); text-align: center;">Nessun ticket di assistenza aperto.</div>`;
-            } else {
-                tickets.forEach(ticket => {
-                    const timeStr = new Date(ticket.created_at).toLocaleTimeString();
-                    content.innerHTML += `
-                        <div class="list-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-                            <div style="display: flex; justify-content: space-between; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">
-                                <span style="font-weight: 800; color: var(--accent);"><i class="fas fa-ticket-alt"></i> ${ticket.username}</span>
-                                <span style="font-size: 0.75rem; color: var(--text-dim);">${timeStr}</span>
-                            </div>
-                            <div style="font-size: 0.85rem; color: white;">${ticket.message}</div>
-                            <button onclick="resolveTicket(${ticket.id}, '${ticket.username}')" class="btn-control btn-action" style="padding: 6px 12px; font-size: 0.75rem; align-self: flex-end; color: var(--success);"><i class="fas fa-check"></i> Risolvi</button>
-                        </div>
-                    `;
+                    content.innerHTML += `<div class="list-item"><span><i class="fas fa-user-slash" style="color: var(--danger); margin-right: 10px;"></i> ${user}</span><button onclick="unbanFromList('${user}')" class="btn-control btn-action" style="padding: 6px 12px; font-size: 0.75rem;"><i class="fas fa-undo"></i> Sbanna</button></div>`;
                 });
             }
             document.getElementById('modal-container').style.display = "flex";
         }
 
         async function viewConnected() {
-            document.getElementById('modal-title').innerText = "Utenti Connessi a KyrosIA";
+            document.getElementById('modal-title').innerText = "Utenti Attivi su KyrosIA";
             const content = document.getElementById('modal-content');
             content.innerHTML = "";
-            
             const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-            const { data: users } = await supabaseClient
-                .from('online_users')
-                .select('username')
-                .gt('last_seen', fiveMinutesAgo);
+            const { data: users } = await supabaseClient.from('online_users').select('*').gt('last_seen', fiveMinutesAgo);
 
             if (!users || users.length === 0) {
-                content.innerHTML = `<div style="color: var(--text-dim); text-align: center;">Nessun utente connesso attualmente.</div>`;
+                content.innerHTML = `<div style="color: var(--text-dim); text-align: center;">Nessun utente attivo.</div>`;
             } else {
                 users.forEach(user => {
-                    content.innerHTML += `
-                        <div class="list-item">
-                            <span><i class="fas fa-circle" style="color: var(--success); font-size: 0.6rem; margin-right: 10px; vertical-align: middle;"></i> ${user.username}</span>
-                            <span style="font-size: 0.75rem; color: var(--text-dim);">Attivo</span>
-                        </div>
-                    `;
+                    content.innerHTML += `<div class="list-item" onclick="openLivePreview('${user.username}')"><span><i class="fas fa-circle" style="color: var(--success); font-size: 0.6rem; margin-right: 10px;"></i> ${user.username}</span><span style="font-size: 0.75rem; color: var(--accent);">Vedi Digitazione Live</span></div>`;
                 });
             }
             document.getElementById('modal-container').style.display = "flex";
         }
 
+        function openLivePreview(username) {
+            clearInterval(previewInterval);
+            document.getElementById('modal-title').innerText = `Live Input: ${username}`;
+            const content = document.getElementById('modal-content');
+            content.innerHTML = `<div style="background: #000; padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border); min-height: 100px; font-family: monospace; color: var(--accent);" id="live-typing-container">In attesa di digitazione...</div>`;
+            
+            const trackPreview = async () => {
+                const { data } = await supabaseClient.from('online_users').select('current_typing').eq('username', username).single();
+                if (data) {
+                    document.getElementById('live-typing-container').innerText = data.current_typing || "(Casella di testo vuota)";
+                }
+            };
+            trackPreview();
+            previewInterval = setInterval(trackPreview, 1000);
+        }
+
+        async function viewAssist() {
+            document.getElementById('modal-title').innerText = "Canali Assistenza Attivi";
+            const content = document.getElementById('modal-content');
+            content.innerHTML = "";
+            const { data: messages } = await supabaseClient.from('kyros_messages').select('sender').neq('room', 'global');
+            const distinctUsers = [...new Set(messages?.filter(m => m.sender !== 'STAFF').map(m => m.sender))];
+
+            if (distinctUsers.length === 0) {
+                content.innerHTML = `<div style="color: var(--text-dim); text-align: center;">Nessuna chat di assistenza aperta.</div>`;
+            } else {
+                distinctUsers.forEach(user => {
+                    content.innerHTML += `<div class="list-item" onclick="openAssistChat('${user}')"><span><i class="fas fa-comments" style="color: var(--accent); margin-right: 10px;"></i> Chat con ${user}</span><button class="btn-control btn-action" style="padding: 6px 12px; font-size: 0.75rem;">Apri</button></div>`;
+                });
+            }
+            document.getElementById('modal-container').style.display = "flex";
+        }
+
+        function openAssistChat(username) {
+            activeChatUser = username;
+            clearInterval(chatInterval);
+            document.getElementById('modal-title').innerText = `Assistenza: ${username}`;
+            const content = document.getElementById('modal-content');
+            content.innerHTML = `
+                <div class="chat-box" id="box-chat-admin"></div>
+                <div class="row-inputs">
+                    <input type="text" id="admin-chat-input" placeholder="Scrivi una risposta all'utente...">
+                    <button onclick="sendAdminChatMessage()" class="btn-control btn-toggle-off" style="padding:12px;"><i class="fas fa-paper-plane"></i></button>
+                </div>
+                <button onclick="clearTicket('${username}')" class="btn-control btn-action" style="color: var(--danger); margin-top: 10px; justify-content: center;"><i class="fas fa-trash"></i> Chiudi e Archivia Ticket</button>
+            `;
+            
+            const loadMessages = async () => {
+                const { data } = await supabaseClient.from('kyros_messages').select('*').eq('room', `assist_${username}`).order('created_at', { ascending: true });
+                const box = document.getElementById('box-chat-admin');
+                if(!box) return;
+                box.innerHTML = "";
+                data?.forEach(m => {
+                    const side = m.sender === 'STAFF' ? 'me' : 'them';
+                    box.innerHTML += `<div class="chat-msg ${side}"><b>${m.sender}:</b> ${m.message}</div>`;
+                });
+                box.scrollTop = box.scrollHeight;
+            };
+
+            loadMessages();
+            chatInterval = setInterval(loadMessages, 2000);
+            
+            setTimeout(() => {
+                document.getElementById('admin-chat-input').onkeypress = (e) => { if(e.key === 'Enter') sendAdminChatMessage(); };
+            }, 200);
+        }
+
+        async function sendAdminChatMessage() {
+            const input = document.getElementById('admin-chat-input');
+            const msg = input.value.trim();
+            if (!msg || !activeChatUser) return;
+            await supabaseClient.from('kyros_messages').insert([{ room: `assist_${activeChatUser}`, sender: 'STAFF', message: msg }]);
+            input.value = "";
+        }
+
+        async function clearTicket(username) {
+            if(confirm(`Sei sicuro di voler eliminare l'intera sessione chat di ${username}?`)) {
+                clearInterval(chatInterval);
+                await supabaseClient.from('kyros_messages').delete().eq('room', `assist_${username}`);
+                logTerminal(`Ticket rimosso e archiviato per: ${username}`);
+                viewAssist();
+            }
+        }
+
         function closeModal() {
+            clearInterval(chatInterval);
+            clearInterval(previewInterval);
             document.getElementById('modal-container').style.display = "none";
         }
 
-        function enterKyros() {
-            window.location.href = "kyros.html";
-        }
-
-        function logout() {
-            sessionStorage.clear();
-            window.location.href = "index.html";
-        }
-
+        function enterKyros() { window.location.href = "kyros.html"; }
+        function logout() { sessionStorage.clear(); window.location.href = "index.html"; }
         checkAuth();
     </script>
 </body>
