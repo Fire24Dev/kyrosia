@@ -161,6 +161,7 @@
                     btn.disabled = false;
                 } else {
                     const userUID = data.user.id;
+                    let isStaff = false;
 
                     const listOwner = [
                         "92ea00e8-2f52-4154-98d8-ad681826ea8c"
@@ -172,15 +173,24 @@
 
                     if (listOwner.includes(userUID)) {
                         sessionStorage.setItem('kyros_role', 'Owner');
+                        isStaff = true;
                     } else if (listAdmin.includes(userUID)) {
                         sessionStorage.setItem('kyros_role', 'Admin');
+                        isStaff = true;
                     } else {
                         sessionStorage.setItem('kyros_role', 'User');
                     }
 
                     sessionStorage.setItem('kyros_session', data.user.email);
                     btn.innerText = "AUTORIZZATO...";
-                    setTimeout(() => { window.location.href = "loading.html"; }, 800);
+                    
+                    setTimeout(() => { 
+                        if (isStaff) {
+                            window.location.href = "dashboard.html"; 
+                        } else {
+                            window.location.href = "loading.html"; 
+                        }
+                    }, 800);
                 }
             } else {
                 if (!email || !pass) return showError("Tutti i parametri sono richiesti.");
