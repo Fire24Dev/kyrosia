@@ -124,7 +124,7 @@
         const currentNick = sessionStorage.getItem('kyros_session');
         const userRole = sessionStorage.getItem('kyros_role');
 
-        let isMaintenance = localStorage.getItem('kyros_maintenance') === 'true';
+        let isMaintenance = false;
         let blacklist = JSON.parse(localStorage.getItem('kyros_blacklist')) || [];
         let activeChatUser = null;
         let chatInterval = null;
@@ -136,6 +136,7 @@
             } else {
                 document.getElementById('admin-identity').innerText = `${userRole.toUpperCase()}: ${currentNick}`;
                 logTerminal(`Sistema agganciato. Benvenuto operatore ${currentNick}.`);
+                setupMaintenanceRealtime();
                 fetchCloudData();
                 setInterval(fetchCloudData, 4000);
             }
@@ -146,6 +147,29 @@
             const time = new Date().toLocaleTimeString();
             out.innerHTML += `<div>[${time}] > ${message}</div>`;
             out.scrollTop = out.scrollHeight;
+        }
+
+        function setupMaintenanceRealtime() {
+            supabaseClient
+                .channel('maintenance_admin_realtime')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'maintenance' }, payload => {
+                    if (payload.new) {
+                        isMaintenance = payload.new.is_active;
+                        updateMaintenanceUI();
+                    }
+                })
+                .subscribe();
+        }
+
+        function updateMaintenanceUI() {
+            const mBtn = document.getElementById('maintenance-btn');
+            if (isMaintenance) {
+                mBtn.className = "btn-control btn-toggle-on";
+                mBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Stato: MANUTENZIONE';
+            } else {
+                mBtn.className = "btn-control btn-toggle-off";
+                mBtn.innerHTML = '<i class="fas fa-power-off"></i> Stato: ONLINE';
+            }
         }
 
         async function fetchCloudData() {
@@ -159,21 +183,27 @@
             const { count: onlineCount } = await supabaseClient.from('online_users').select('*', { count: 'exact', head: true }).gt('last_seen', fiveMinutesAgo);
             document.getElementById('count-connected').innerText = onlineCount || 0;
 
-            const mBtn = document.getElementById('maintenance-btn');
-            if (isMaintenance) {
-                mBtn.className = "btn-control btn-toggle-on";
-                mBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Stato: MANUTENZIONE';
-            } else {
-                mBtn.className = "btn-control btn-toggle-off";
-                mBtn.innerHTML = '<i class="fas fa-power-off"></i> Stato: ONLINE';
+            const { data: maintData } = await supabaseClient.from('maintenance').select('is_active').eq('id', 1);
+            if (maintData && maintData.length > 0) {
+                isMaintenance = maintData[0].is_active;
             }
+            updateMaintenanceUI();
         }
 
-        function toggleMaintenance() {
-            isMaintenance = !isMaintenance;
-            localStorage.setItem('kyros_maintenance', isMaintenance);
-            logTerminal(`Variazione stato manutenzione di sistema: ${isMaintenance ? "OFFLINE/MANUTENZIONE" : "ONLINE"}`);
-            fetchCloudData();
+        async function toggleMaintenance() {
+            const nextState = !isMaintenance;
+            const { error } = await supabaseClient
+                .from('maintenance')
+                .update({ is_active: nextState, updated_at: new Date() })
+                .eq('id', 1);
+
+            if (error) {
+                logTerminal(`Errore variazione stato manutenzione: ${error.message}`);
+            } else {
+                isMaintenance = nextState;
+                logTerminal(`Variazione stato manutenzione di sistema: ${isMaintenance ? "OFFLINE/MANUTENZIONE" : "ONLINE"}`);
+                updateMaintenanceUI();
+            }
         }
 
         function banUser() {
