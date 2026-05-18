@@ -157,8 +157,8 @@
 
         function listenMaintenance() {
             supabaseClient
-                .channel('public:maintenance')
-                .on('postgres_changes', { event: '*', filter: 'id=eq.1', schema: 'public', table: 'maintenance' }, payload => {
+                .channel('maintenance_realtime')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'maintenance' }, payload => {
                     if (payload.new) {
                         checkMaintenanceView(payload.new.is_active);
                     }
@@ -172,11 +172,10 @@
             const { data, error } = await supabaseClient
                 .from('maintenance')
                 .select('is_active')
-                .eq('id', 1)
-                .single();
+                .eq('id', 1);
             
-            if (!error && data) {
-                checkMaintenanceView(data.is_active);
+            if (!error && data && data.length > 0) {
+                checkMaintenanceView(data[0].is_active);
             } else {
                 checkMaintenanceView(false);
             }
